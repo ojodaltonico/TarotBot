@@ -1,0 +1,14 @@
+{
+  "name": "whatsapp-node-bot",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@whiskeysockets/baileys": "^6.7.9",
+    "axios": "^1.6.7",
+    "qrcode-terminal": "^0.12.0"
+  }
+}
