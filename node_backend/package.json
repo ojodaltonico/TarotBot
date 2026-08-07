@@ -4,11 +4,13 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node index.js",
+    "test": "node test/inbound.test.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.9",
     "axios": "^1.6.7",
+    "dotenv": "^16.4.7",
     "qrcode-terminal": "^0.12.0"
   }
 }

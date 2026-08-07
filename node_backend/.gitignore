@@ -1,0 +1,10 @@
+# Dependencias
+node_modules/
+npm-debug.log*
+
+# Sesiones de WhatsApp (NO subir)
+whatsapp-sessions/
+!.gitignore
+
+# Logs
+*.log

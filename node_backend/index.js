@@ -1,86 +1,157 @@
 import makeWASocket, {
-  useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  useMultiFileAuthState,
 } from "@whiskeysockets/baileys"
-import Pino from "pino"
-import { Boom } from "@hapi/boom"
-import fs from "fs"
-import qrcode from "qrcode-terminal"
 import axios from "axios"
+import dotenv from "dotenv"
+import qrcode from "qrcode-terminal"
+import { resolve } from "path"
+import { pathToFileURL } from "url"
 
-const AUTH_FOLDER = "./whatsapp-sessions"
+dotenv.config({ path: resolve(process.cwd(), "..", ".env") })
+
+const AUTH_FOLDER = process.env.WHATSAPP_AUTH_FOLDER || "./whatsapp-sessions"
+const BACKEND_URL = process.env.WHATSAPP_BACKEND_URL || "http://127.0.0.1:5001"
+const INBOUND_URL = `${BACKEND_URL.replace(/\/$/, "")}/internal/whatsapp/inbound`
+const MAX_RECONNECT_DELAY_MS = 30_000
+
+let reconnectAttempts = 0
+let reconnectScheduled = false
+
+export function isGroupJid(jid) {
+  return typeof jid === "string" && jid.endsWith("@g.us")
+}
+
+export function extractInboundMessage(message) {
+  const content = message.message
+  if (!content || !message.key?.remoteJid || !message.key?.id) return null
+
+  let text = null
+  let messageType = null
+
+  if (typeof content.conversation === "string") {
+    text = content.conversation
+    messageType = "text"
+  } else if (typeof content.extendedTextMessage?.text === "string") {
+    text = content.extendedTextMessage.text
+    messageType = "text"
+  } else if (content.imageMessage) {
+    text = content.imageMessage.caption || ""
+    messageType = "image"
+  }
+
+  if (!messageType) return null
+
+  const unixTimestamp = Number(message.messageTimestamp) || Math.floor(Date.now() / 1000)
+  return {
+    sender: message.key.remoteJid,
+    message_id: message.key.id,
+    timestamp: new Date(unixTimestamp * 1000).toISOString(),
+    message_type: messageType,
+    text,
+  }
+}
+
+function scheduleReconnect(reason) {
+  if (reconnectScheduled) return
+
+  reconnectScheduled = true
+  const delay = Math.min(1_000 * 2 ** reconnectAttempts, MAX_RECONNECT_DELAY_MS)
+  reconnectAttempts += 1
+  console.warn(`WhatsApp se desconectó (${reason}). Reintento en ${delay / 1000}s.`)
+
+  setTimeout(() => {
+    reconnectScheduled = false
+    startBot().catch((error) => {
+      console.error("No se pudo reiniciar el gateway:", error.message)
+      scheduleReconnect("fallo al iniciar")
+    })
+  }, delay)
+}
+
+async function sendBackendMessages(sock, recipient, messages) {
+  for (const message of messages || []) {
+    const typingMs = Number(message.typing_ms || 0)
+    const delayMs = Number(message.delay_ms || 0)
+
+    if (typingMs > 0 || delayMs > 0) {
+      await sock.sendPresenceUpdate("composing", recipient)
+      await new Promise((resolveDelay) => setTimeout(resolveDelay, Math.min(Math.max(typingMs, delayMs), 10_000)))
+      await sock.sendPresenceUpdate("paused", recipient)
+    }
+
+    if (message.type === "text" && message.text) {
+      await sock.sendMessage(recipient, { text: message.text })
+    } else if (message.type === "image") {
+      console.warn("El backend solicitó una imagen, formato aún no implementado.")
+    }
+  }
+}
+
+async function handleInboundMessage(sock, rawMessage) {
+  if (!rawMessage.message || rawMessage.key.fromMe) return
+  if (isGroupJid(rawMessage.key.remoteJid)) return
+
+  const inbound = extractInboundMessage(rawMessage)
+  if (!inbound) return
+
+  console.info(`Mensaje entrante recibido: id=${inbound.message_id} tipo=${inbound.message_type}`)
+  try {
+    const response = await axios.post(INBOUND_URL, inbound, { timeout: 10_000 })
+    await sendBackendMessages(sock, inbound.sender, response.data?.messages)
+  } catch (error) {
+    const status = error.response?.status
+    console.error(`Error procesando id=${inbound.message_id}${status ? ` status=${status}` : ""}:`, error.message)
+    try {
+      await sock.sendMessage(inbound.sender, {
+        text: "No pude procesar tu mensaje en este momento. Intentá nuevamente en unos instantes.",
+      })
+    } catch (sendError) {
+      console.error(`No se pudo enviar el aviso para id=${inbound.message_id}:`, sendError.message)
+    }
+  }
+}
 
 async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(AUTH_FOLDER)
   const { version } = await fetchLatestBaileysVersion()
-
-  console.log("✅ Iniciando bot con versión Baileys:", version)
-
   const sock = makeWASocket({
     version,
-    browser: ["Chrome (Linux)", "Chrome", "10.0.0"],
+    browser: ["TarotBot", "Chrome", "1.0.0"],
     auth: state,
-    logger: Pino({ level: "silent" }),
-    markOnlineOnConnect: true,
+    markOnlineOnConnect: false,
     syncFullHistory: false,
   })
 
-  // --- QR ---
   sock.ev.on("connection.update", (update) => {
     const { connection, lastDisconnect, qr } = update
-
     if (qr) {
-      console.log("📲 Escaneá este código QR con tu WhatsApp:")
+      console.log("Escaneá este código QR con WhatsApp:")
       qrcode.generate(qr, { small: true })
     }
-
+    if (connection === "open") {
+      reconnectAttempts = 0
+      console.log("Gateway conectado a WhatsApp.")
+    }
     if (connection === "close") {
-      const reason = new Boom(lastDisconnect?.error)?.output?.statusCode
-      if (reason === DisconnectReason.loggedOut) {
-        console.log("❌ Sesión cerrada, borrando datos y reiniciando...")
-        fs.rmSync(AUTH_FOLDER, { recursive: true, force: true })
-        startBot()
-      } else {
-        console.log("⚠️ Conexión cerrada. Reconectando...")
-        startBot()
+      const statusCode = lastDisconnect?.error?.output?.statusCode
+      if (statusCode === DisconnectReason.loggedOut) {
+        console.error("La sesión fue cerrada. Las credenciales locales se preservaron; vinculá nuevamente si hace falta.")
       }
-    } else if (connection === "open") {
-      console.log("✅ Conectado a WhatsApp Web correctamente.")
-      console.log("🤖 Bot listo - vinculado con backend Python.")
+      scheduleReconnect(statusCode || "desconocido")
     }
   })
 
-  // --- Guardar credenciales ---
   sock.ev.on("creds.update", saveCreds)
-
-  // --- Manejo de mensajes ---
   sock.ev.on("messages.upsert", async ({ messages }) => {
-    const msg = messages[0]
-    if (!msg.message || msg.key.fromMe) return
-
-    const from = msg.key.remoteJid
-    const text = msg.message.conversation || msg.message.extendedTextMessage?.text
-    if (!text) return
-
-    console.log(`💬 Mensaje de ${from}: "${text}"`)
-
-    try {
-      const webhookData = { from, message: text }
-      const response = await axios.post("http://localhost:5001/webhook", webhookData, { timeout: 10000 })
-
-      if (response.data && response.data.reply) {
-        await sock.sendMessage(from, { text: response.data.reply })
-        console.log("✅ Respuesta enviada al usuario.")
-      }
-    } catch (error) {
-      console.error("❌ Error al manejar mensaje:", error.message)
-      try {
-        await sock.sendMessage(from, { text: "⚠️ Error del servidor. Intenta nuevamente más tarde." })
-      } catch {}
-    }
+    for (const message of messages) await handleInboundMessage(sock, message)
   })
 }
 
-// --- Iniciar ---
-startBot().catch((err) => console.error("❌ Error general:", err))
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startBot().catch((error) => {
+    console.error("No se pudo iniciar el gateway:", error.message)
+    scheduleReconnect("error inicial")
+  })
+}

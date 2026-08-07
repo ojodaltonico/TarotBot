@@ -1,17 +1,52 @@
-# WhatsApp Bot Base 🤖
+# TarotBot
 
-Proyecto base para crear bots de WhatsApp con Node.js y Python.
+Infraestructura conversacional inicial para una tarotista virtual por WhatsApp. Esta etapa conecta WhatsApp/Baileys con FastAPI y SQLite; todavía no incluye IA, tarot, cartas, imágenes, memoria, panel administrativo ni pagos.
 
-## Características
-- 🤖 Conexión a WhatsApp Web
-- 🔄 Comunicación Node.js ↔ Python
-- 🎨 Interfaz gráfica para configurar respuestas
-- 🚀 Fácil de extender con nuevas funcionalidades
+## Arquitectura
 
-## Estructura
-- `node_backend/` - Bot de WhatsApp (Node.js + Baileys)
-- `python_backend/` - Backend principal (Python + Flask + Tkinter)
-- `run.bat` - Script de inicio para Windows
+```text
+WhatsApp -> Baileys (Node) -> FastAPI (127.0.0.1:5001) -> SQLite
+         <- mensajes temporales  <- FastAPI
+```
 
-## Configuración Rápida
+El gateway Node recibe mensajes privados, los normaliza y los envía a `POST /internal/whatsapp/inbound`. FastAPI crea o localiza el usuario y su conversación activa, persiste el mensaje y devuelve una respuesta temporal. El gateway la envía a WhatsApp.
 
+## Requisitos
+
+- Windows, Python 3.11+ y Node.js 20+.
+- Una cuenta de WhatsApp para vincular mediante QR.
+
+## Instalación
+
+1. Copiá `.env.example` a `.env` si querés cambiar la configuración local. No agregues secretos al repositorio.
+2. Ejecutá `install.bat`.
+3. Ejecutá `run.bat` para abrir el backend y el gateway, o `start_backend.bat` / `start_gateway.bat` por separado.
+
+El backend queda disponible en `http://127.0.0.1:5001`; su estado se consulta en `GET /health`.
+
+## Vincular WhatsApp
+
+Al iniciar el gateway se mostrará un QR en la consola si no hay una sesión válida. En WhatsApp, abrí **Dispositivos vinculados** y escanealo. Las credenciales se guardan en `node_backend/whatsapp-sessions/` y nunca deben subirse a Git.
+
+## Datos locales
+
+- SQLite: `data/tarotbot.db` (se crea y migra automáticamente al arrancar FastAPI).
+- Sesión de WhatsApp: `node_backend/whatsapp-sessions/`.
+- Configuración local: `.env`.
+
+Todos estos elementos están ignorados por Git.
+
+## Estado del MVP
+
+Por cada mensaje privado de texto (o caption de imagen), el sistema persiste un usuario, una conversación y el mensaje entrante. Devuelve y guarda la respuesta temporal: `Hola. TarotBot está conectado correctamente. 🔮`. El identificador de mensaje de WhatsApp es único: reenviar el mismo ID no produce una segunda respuesta ni duplica datos.
+
+Los grupos se descartan por ahora. El contrato ya admite metadatos de typing/delay e imágenes para fases posteriores, aunque la respuesta temporal actual es solo texto.
+
+## Tests
+
+Con las dependencias instaladas:
+
+```bat
+backend\.venv\Scripts\python.exe -m pytest backend\tests
+npm.cmd --prefix node_backend test
+```

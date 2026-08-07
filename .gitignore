@@ -1,0 +1,32 @@
+# Node.js
+node_modules/
+node_backend/node_modules/
+node_backend/whatsapp-sessions/
+*.log
+logs/
+.pytest_cache/
+backend/tests/*.db
+
+# Python
+__pycache__/
+*.py[cod]
+.Python
+env/
+venv/
+.venv/
+backend/.venv/
+
+# Local configuration and data
+.env
+.env.*
+!.env.example
+config.local.json
+data/
+*.db
+*.sqlite
+*.sqlite3
+
+# System and IDE files
+.DS_Store
+Thumbs.db
+.idea/
