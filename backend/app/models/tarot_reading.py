@@ -20,6 +20,7 @@ class TarotReading(Base):
     cards: Mapped[list["TarotReadingCard"]] = relationship(
         back_populates="reading", cascade="all, delete-orphan", order_by="TarotReadingCard.position_index"
     )
+    interpretations: Mapped[list["TarotInterpretation"]] = relationship(back_populates="reading", cascade="all, delete-orphan")
 
 
 class TarotReadingCard(Base):
@@ -35,3 +36,15 @@ class TarotReadingCard(Base):
     card_snapshot: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     reading: Mapped["TarotReading"] = relationship(back_populates="cards")
+
+class TarotInterpretation(Base):
+    __tablename__ = "tarot_interpretations"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reading_id: Mapped[int] = mapped_column(ForeignKey("tarot_readings.id"), nullable=False, index=True)
+    interpretation_text: Mapped[str] = mapped_column(Text, nullable=False)
+    interpretation_summary: Mapped[str] = mapped_column(Text, nullable=False)
+    prompt_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    model: Mapped[str] = mapped_column(String(128), nullable=False)
+    provider: Mapped[str] = mapped_column(String(64), nullable=False)
+    interpreted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
+    reading: Mapped["TarotReading"] = relationship(back_populates="interpretations")

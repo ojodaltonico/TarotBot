@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from app.schemas.whatsapp import InboundWhatsAppMessage, InboundWhatsAppResponse
 from app.services.inbound import process_inbound_message
@@ -7,6 +8,12 @@ from app.schemas.tarot import DrawnCardResponse, SpreadSummary, TarotCardSummary
 from app.tarot.engine import TarotEngine
 from app.tarot.catalog import get_catalog
 from app.tarot.spreads import SPREADS
+from app.ai.fake_provider import FakeAIProvider
+from app.ai.gemini_provider import GeminiProvider
+from app.core.config import get_settings
+from app.schemas.lab import LabChatRequest, LabReadingRequest, LabChatResponse, LabUserStateResponse, LabReadingResponse, LabMemoryRefreshResponse, LabResetResponse
+from app.services.lab import LabService
+from app.models.ai import UserMemory
 
 
 router = APIRouter()
@@ -14,6 +21,12 @@ router = APIRouter()
 
 def get_session(request: Request) -> Session:
     return request.app.state.SessionLocal()
+
+def lab_service():
+    settings=get_settings()
+    if settings.ai_provider=="fake": return LabService(FakeAIProvider(mode="demo"))
+    if settings.ai_provider=="gemini": return LabService(GeminiProvider(api_key=settings.gemini_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled))
+    raise HTTPException(status_code=422,detail="Unsupported AI_PROVIDER")
 
 
 @router.get("/health")
@@ -62,3 +75,41 @@ def tarot_test_draw(request: TestDrawRequest) -> TestDrawResponse:
             name=drawn.card.name_es, orientation=drawn.orientation, image_path=drawn.card.image_path,
         ) for drawn in result.cards],
     )
+
+@router.post("/internal/lab/chat",response_model=LabChatResponse)
+def lab_chat(body:LabChatRequest,request:Request):
+ s=get_session(request)
+ try:
+  u,c,d,r=lab_service().chat(s,body.user_key,body.message)
+  return {"reply":d.reply,"state":c.state,"intent":d.intent.value,"reading_recommended":d.reading_recommended,"suggested_spread":d.suggested_spread,"usage":None if r is None else {"provider":r.provider,"model":r.model,"input_tokens":r.input_tokens,"output_tokens":r.output_tokens,"estimated_cost_usd":None}}
+ finally:s.close()
+@router.get("/internal/lab/users/{user_key}",response_model=LabUserStateResponse)
+def lab_status(user_key:str,request:Request):
+ s=get_session(request)
+ try:
+  if not s.scalar(select(__import__('app.models.user',fromlist=['User']).User).where(__import__('app.models.user',fromlist=['User']).User.whatsapp_jid==f"lab:{user_key}")): raise HTTPException(status_code=404,detail="Lab user not found")
+  u,c,msgs,read,interp,metrics=lab_service().status(s,user_key)
+  memory=s.scalar(select(UserMemory).where(UserMemory.user_id==u.id));cards=[] if not read else [{"position":x.position_label,"card_id":x.card_id,"orientation":x.orientation} for x in s.scalars(select(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard).where(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.reading_id==read.id)).all()]
+  return {"user_key":user_key,"user_id":u.id,"conversation_id":c.id,"state":c.state,"last_intent":c.last_intent,"reading_recommended":c.reading_recommended,"suggested_spread":c.suggested_spread,"memory":memory.summary if memory else None,"memory_version":memory.version if memory else None,"message_count":len(msgs),"messages":[{"direction":m.direction,"content":m.content} for m in reversed(msgs)],"last_reading_id":read.id if read else None,"last_reading":None if not read else {"reading_id":read.id,"spread":read.spread_type,"created_at":read.created_at.isoformat(),"cards":cards},"last_interpretation":interp.interpretation_summary if interp else None,"metrics":metrics}
+ finally:s.close()
+@router.post("/internal/lab/users/{user_key}/reading",response_model=LabReadingResponse)
+def lab_reading(user_key:str,body:LabReadingRequest,request:Request):
+ s=get_session(request)
+ try:
+  reading,interpretation,c=lab_service().reading(s,user_key,body.spread_type,body.question)
+  cards=s.scalars(select(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard).where(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.reading_id==reading.id).order_by(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.position_index)).all()
+  return {"reading_id":reading.id,"spread":reading.spread_type,"cards":[{"position":x.position_label,"name":__import__('json').loads(x.card_snapshot)["name_es"],"orientation":x.orientation} for x in cards],"interpretation":interpretation.interpretation_text if interpretation else None,"summary":interpretation.interpretation_summary if interpretation else None,"state":c.state}
+ except ValueError as e:raise HTTPException(status_code=422,detail=str(e))
+ finally:s.close()
+@router.post("/internal/lab/users/{user_key}/memory/refresh",response_model=LabMemoryRefreshResponse)
+def lab_memory(user_key:str,request:Request):
+ s=get_session(request)
+ try:
+  return lab_service().refresh_memory(s,user_key)
+ except ValueError as e: raise HTTPException(status_code=404,detail=str(e))
+ finally:s.close()
+@router.post("/internal/lab/users/{user_key}/reset",response_model=LabResetResponse)
+def lab_reset(user_key:str,request:Request):
+ s=get_session(request)
+ try:return {"reset":lab_service().reset(s,user_key),"user_key":user_key}
+ finally:s.close()

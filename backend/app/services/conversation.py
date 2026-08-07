@@ -1,0 +1,58 @@
+import json
+from pathlib import Path
+from pydantic import ValidationError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+from app.ai.provider import AIMessage, AIProvider, AIProviderError, AIResponse
+from app.ai.costs import estimate_cost
+from app.core.config import get_settings
+from app.conversation.schemas import ConversationDecision, ConversationState
+from app.models.ai import AICall, UserMemory
+from app.models.message import Message
+from app.tarot.spreads import SPREADS
+
+PROMPT_VERSION="tarotista_v1"
+PROMPT=Path(__file__).parents[1]/"ai"/"prompts"/"tarotista_v1.txt"
+ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
+FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
+
+
+class EmptyResponseError(ValueError): pass
+class InvalidResponseError(ValueError): pass
+
+class ConversationService:
+ """Persist a safe fallback for any unusable AI decision; valid decisions alone may change state."""
+ def __init__(self, provider: AIProvider, recent_messages=None, store_debug=False): self.provider=provider; self.recent_messages=get_settings().ai_recent_messages if recent_messages is None else recent_messages; self.store_debug=store_debug
+ def chat(self, session: Session, user, conversation, text: str):
+  current_message=Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="incoming",message_type="text",content=text)
+  session.add(current_message); session.flush()
+  history=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation.id,Message.id!=current_message.id,Message.message_type!="internal").order_by(Message.id.desc()).limit(self.recent_messages)).all()))
+  memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",PROMPT.read_text(encoding="utf8"))]
+  if memory: messages.append(AIMessage("system",f"Memoria: {memory.summary}"))
+  messages += [AIMessage("user" if m.direction=="incoming" else "assistant",m.content) for m in history]
+  messages.append(AIMessage("user",text))
+  try:
+   response=self.provider.generate(messages,purpose="conversation",options={"response_schema": ConversationDecision})
+   if not response.text or not response.text.strip(): raise EmptyResponseError()
+   decision=ConversationDecision.model_validate_json(response.text)
+   if not decision.reply.strip(): raise InvalidResponseError()
+   if not decision.reading_recommended: decision=decision.model_copy(update={"suggested_spread":None})
+   elif decision.suggested_spread not in SPREADS: decision=decision.model_copy(update={"suggested_spread":None,"reading_recommended":False})
+   current=ConversationState(conversation.state); next_state=decision.next_state if decision.next_state in ALLOWED_TRANSITIONS[current] else current
+   if next_state != decision.next_state: decision=decision.model_copy(update={"next_state":next_state})
+   conversation.state=next_state.value;conversation.last_intent=decision.intent.value;conversation.reading_recommended=decision.reading_recommended;conversation.suggested_spread=decision.suggested_spread
+   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply))
+   self._audit(session,user.id,conversation.id,response,True,None,{"history":len(history)}); session.commit(); return decision,response
+  except Exception as error:
+   audit_response=getattr(error,"response",None)
+   if audit_response is None and "response" in locals(): audit_response=response
+   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=FALLBACK)); self._audit(session,user.id,conversation.id,audit_response,False,self._error_category(error),None); session.commit(); return ConversationDecision(reply=FALLBACK,intent="unclear",next_state=ConversationState(conversation.state)),None
+ def _error_category(self,error):
+  if isinstance(error,AIProviderError): return error.category
+  if isinstance(error,TimeoutError): return "timeout"
+  if isinstance(error,EmptyResponseError): return "empty_response"
+  if isinstance(error,InvalidResponseError): return "invalid_response"
+  if isinstance(error,ValidationError): return "validation_error"
+  return "provider_error"
+ def _audit(self,s,u,c,r,ok,error,payload):
+  s.add(AICall(user_id=u,conversation_id=c,reading_id=None,purpose="conversation",provider=getattr(r,"provider","unknown"),model=getattr(r,"model","unknown"),prompt_version=PROMPT_VERSION,input_tokens=getattr(r,"input_tokens",0),cached_input_tokens=getattr(r,"cached_tokens",None),output_tokens=getattr(r,"output_tokens",0),latency_ms=getattr(r,"latency_ms",0),success=ok,error_type=error,estimated_cost_usd=estimate_cost(getattr(r,"provider",""),getattr(r,"model",""),getattr(r,"input_tokens",0),getattr(r,"output_tokens",0),getattr(r,"cached_tokens",None)),debug_payload=json.dumps(payload) if self.store_debug else None))

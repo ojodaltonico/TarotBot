@@ -12,6 +12,17 @@ class Settings(BaseSettings):
     backend_port: int = 5001
     database_url: str = "sqlite:///./data/tarotbot.db"
     log_level: str = "INFO"
+    ai_enabled: bool = True
+    ai_provider: str = "fake"
+    ai_chat_model: str = "gemini-2.5-flash"
+    ai_memory_model: str = "gemini-2.5-flash"
+    gemini_api_key: str = ""
+    ai_timeout_seconds: int = 30
+    ai_max_output_tokens: int = 800
+    ai_recent_messages: int = 12
+    ai_memory_update_interval: int = 8
+    ai_store_debug_payloads: bool = False
+    run_migrations_on_startup: bool = True
 
     model_config = SettingsConfigDict(
         env_file=ROOT_DIR / ".env",

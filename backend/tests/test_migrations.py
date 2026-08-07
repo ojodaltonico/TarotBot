@@ -23,13 +23,14 @@ def tables_in(database_path: Path) -> set[str]:
 def test_empty_database_migrates_to_head():
     database_path = Path(__file__).parent / f"migration_empty_{uuid4().hex}.db"
     command.upgrade(migration_config(database_path), "head")
-    assert {"users", "conversations", "messages", "tarot_readings", "tarot_reading_cards"}.issubset(tables_in(database_path))
+    assert {"users", "conversations", "messages", "tarot_readings", "tarot_reading_cards", "tarot_interpretations"}.issubset(tables_in(database_path))
 
 
-def test_database_at_revision_01_upgrades_to_revision_02():
+def test_database_at_revision_04_upgrades_to_head():
     database_path = Path(__file__).parent / f"migration_upgrade_{uuid4().hex}.db"
     config = migration_config(database_path)
-    command.upgrade(config, "20260807_01")
-    assert "tarot_readings" not in tables_in(database_path)
+    command.upgrade(config, "20260807_04")
+    assert "tarot_readings" in tables_in(database_path)
+    assert "tarot_interpretations" in tables_in(database_path)
     command.upgrade(config, "head")
-    assert {"tarot_readings", "tarot_reading_cards"}.issubset(tables_in(database_path))
+    assert {"last_intent", "reading_recommended", "suggested_spread"}.issubset({row[1] for row in sqlite3.connect(database_path).execute("pragma table_info(conversations)")})

@@ -64,3 +64,15 @@ Con las dependencias instaladas:
 backend\.venv\Scripts\python.exe -m pytest backend\tests
 npm.cmd --prefix node_backend test
 ```
+
+## Estado actual del proyecto
+
+TarotBot incluye el gateway WhatsApp/Baileys, FastAPI con SQLite, un Tarot Engine Rider-Waite-Smith de 78 cartas y los spreads `one_card`, `general_three` y `relationship_three`. También dispone de motor conversacional, memoria resumida, provider Gemini, provider Fake, interpretaciones persistidas y laboratorio local. WhatsApp todavía **no está conectado a la IA**.
+
+## Configuración IA y laboratorio
+
+Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
+
+Para desarrollo sin red usá `AI_PROVIDER=fake`. Para Gemini configurá localmente `AI_PROVIDER=gemini` y `GEMINI_API_KEY=<tu clave local>`. Iniciá el backend y luego ejecutá `python scripts/chat_tarot.py` (o `--debug`). La consola admite `/reading [one_card|general_three|relationship_three]`, `/memory`, `/state`, `/refresh-memory`, `/reset`, `/help` y `/quit`.
+
+Las rutas `/internal/lab/...` son sólo para desarrollo local: chat, estado de usuario, lectura explícita, refresh de memoria y reset. El modo debug muestra estado, recomendación, uso y costo, nunca secretos ni payloads completos. Las conversaciones de laboratorio pueden persistirse localmente en SQLite; usá los debug payloads conscientemente y revisá las condiciones del provider y la retención antes de producción.
