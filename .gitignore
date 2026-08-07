@@ -21,7 +21,7 @@ backend/.venv/
 .env.*
 !.env.example
 config.local.json
-data/
+/data/
 *.db
 *.sqlite
 *.sqlite3

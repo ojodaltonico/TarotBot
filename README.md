@@ -1,6 +1,6 @@
 # TarotBot
 
-Infraestructura conversacional inicial para una tarotista virtual por WhatsApp. Esta etapa conecta WhatsApp/Baileys con FastAPI y SQLite; todavía no incluye IA, tarot, cartas, imágenes, memoria, panel administrativo ni pagos.
+Infraestructura conversacional inicial para una tarotista virtual por WhatsApp. Incluye un Tarot Engine independiente y auditable; todavía no incluye IA, memoria, panel administrativo ni pagos.
 
 ## Arquitectura
 
@@ -41,6 +41,20 @@ Todos estos elementos están ignorados por Git.
 Por cada mensaje privado de texto (o caption de imagen), el sistema persiste un usuario, una conversación y el mensaje entrante. Devuelve y guarda la respuesta temporal: `Hola. TarotBot está conectado correctamente. 🔮`. El identificador de mensaje de WhatsApp es único: reenviar el mismo ID no produce una segunda respuesta ni duplica datos.
 
 Los grupos se descartan por ahora. El contrato ya admite metadatos de typing/delay e imágenes para fases posteriores, aunque la respuesta temporal actual es solo texto.
+
+## Tarot Engine
+
+El catálogo Rider-Waite-Smith contiene 78 cartas estructuradas en `backend/app/tarot/data/deck.json`: 22 arcanos mayores y 56 menores (14 por palo). El motor Python selecciona cartas sin repetición, controla la probabilidad de invertidas y admite una semilla opcional para reproducir una tirada. No interviene ningún modelo de IA.
+
+Spreads disponibles: `one_card`, `general_three` y `relationship_three`. Las tiradas persistidas guardan posición, orientación, metadatos de auditoría y un snapshot de la carta; por eso no se reescriben si el catálogo cambia después.
+
+Para probar un sorteo puro, sin WhatsApp ni persistencia:
+
+```bat
+backend\.venv\Scripts\python.exe scripts\test_tarot.py relationship_three --seed ejemplo-1
+```
+
+Las rutas de imágenes futuras están documentadas en [`assets/tarot-cards/README.md`](assets/tarot-cards/README.md). No se incluye arte de cartas en este repositorio todavía.
 
 ## Tests
 
