@@ -112,7 +112,7 @@ def test_complete_question_is_sent_without_forcing_a_second_question(client):
         fake = FakeAIProvider(response=decision("Con eso alcanza para mirar la dinámica.", "relationship", "DEFINING_QUESTION", True, "relationship_three"))
         result, _ = ConversationService(fake).chat(session, user, conversation, question)
 
-        assert conversation.state == ConversationState.DEFINING_QUESTION.value
+        assert conversation.state == ConversationState.READY_FOR_READING.value
         assert result.reading_recommended is True
         assert fake.requests[0][0][-1].content == question
         assert "?" not in result.reply

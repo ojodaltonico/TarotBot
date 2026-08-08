@@ -10,6 +10,7 @@ from app.tarot.catalog import get_catalog
 from app.tarot.spreads import SPREADS
 from app.ai.fake_provider import FakeAIProvider
 from app.ai.gemini_provider import GeminiProvider
+from app.ai.groq_provider import GroqProvider
 from app.core.config import get_settings
 from app.schemas.lab import LabChatRequest, LabReadingRequest, LabChatResponse, LabUserStateResponse, LabReadingResponse, LabMemoryRefreshResponse, LabResetResponse
 from app.services.lab import LabService
@@ -30,6 +31,7 @@ def ai_provider_from_settings():
     settings=get_settings()
     if settings.ai_provider=="fake": return FakeAIProvider(mode="demo")
     if settings.ai_provider=="gemini": return GeminiProvider(api_key=settings.gemini_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled,trust_env_proxy=settings.ai_trust_env_proxy)
+    if settings.ai_provider=="groq": return GroqProvider(api_key=settings.groq_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled)
     raise HTTPException(status_code=422,detail="Unsupported AI_PROVIDER")
 
 

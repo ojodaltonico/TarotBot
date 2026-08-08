@@ -1,5 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+import { resolve } from "node:path"
 import { dispatchBackendResponse, extractInboundMessage, getBackendRequestTimeoutMs, getCollectionTimeoutMs, isGatewayTimeout, isGroupJid, MessageBatcher, sendBackendMessages } from "../index.js"
 
 function fakeClock() {
@@ -134,4 +135,44 @@ test("mantiene un segundo lote detrás del procesamiento y se recupera de fallo"
 test("normaliza configuración de ventana humana", () => {
   assert.equal(getCollectionTimeoutMs("20000", 12_000), 20_000)
   assert.equal(getCollectionTimeoutMs("bad", 12_000), 12_000)
+})
+
+test("envía una imagen antes de los fragmentos con typing y pausas por burbuja", async () => {
+  const events = []
+  const sock = {
+    sendPresenceUpdate: async (presence) => events.push(`presence:${presence}`),
+    sendMessage: async (_recipient, payload) => events.push(payload.image ? "image" : `text:${payload.text}`),
+  }
+  const table = resolve(process.cwd(), "..", "assets", "tarot-cards", "table", "table_v1.png")
+  await sendBackendMessages(sock, "a@s.whatsapp.net", [
+    { type: "image", image_path: table, caption: "Cartas", typing_ms: 100 },
+    { type: "text", text: "Primera idea.", typing_ms: 200, delay_ms: 50 },
+    { type: "text", text: "Segunda idea.", typing_ms: 300, delay_ms: 75 },
+  ], { sleep: async (milliseconds) => events.push(`sleep:${milliseconds}`) })
+  assert.deepEqual(events, [
+    "presence:composing", "sleep:100", "presence:paused", "image",
+    "sleep:50", "presence:composing", "sleep:200", "presence:paused", "text:Primera idea.",
+    "sleep:75", "presence:composing", "sleep:300", "presence:paused", "text:Segunda idea.",
+  ])
+})
+
+test("omite una imagen inexistente sin detener los textos posteriores", async () => {
+  const sent = []; const warnings = []
+  const sock = { sendPresenceUpdate: async () => {}, sendMessage: async (_recipient, payload) => sent.push(payload) }
+  await sendBackendMessages(sock, "a@s.whatsapp.net", [
+    { type: "image", image_path: "Z:/missing-reading.jpg" },
+    { type: "text", text: "Seguimos con la lectura." },
+  ], { sleep: async () => {}, log: { warn: (message) => warnings.push(message) } })
+  assert.equal(warnings.length, 1)
+  assert.deepEqual(sent, [{ text: "Seguimos con la lectura." }])
+})
+
+test("un fallo durante el typing siempre pausa la presencia", async () => {
+  const presences = []
+  const sock = { sendPresenceUpdate: async (presence) => presences.push(presence), sendMessage: async () => {} }
+  await assert.rejects(
+    sendBackendMessages(sock, "a@s.whatsapp.net", [{ type: "text", text: "Hola", typing_ms: 10 }], { sleep: async () => { throw new Error("timer failed") } }),
+    /timer failed/,
+  )
+  assert.deepEqual(presences, ["composing", "paused"])
 })

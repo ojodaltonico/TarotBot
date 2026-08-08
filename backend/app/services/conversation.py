@@ -14,7 +14,7 @@ from app.tarot.spreads import SPREADS
 PROMPT_VERSION="tarotista_v3"
 PROMPT_DIR=Path(__file__).parents[1]/"ai"/"prompts"
 PROMPT=PROMPT_DIR/f"{PROMPT_VERSION}.txt"
-ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
+ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION,ConversationState.READY_FOR_READING},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
 
 
@@ -53,6 +53,7 @@ class ConversationService:
    if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none,"reply":CONFIRMATION_NOT_READY,"next_state":current,"reading_recommended":False,"suggested_spread":None})
    if not decision.reading_recommended: decision=decision.model_copy(update={"suggested_spread":None})
    elif decision.suggested_spread not in SPREADS: decision=decision.model_copy(update={"suggested_spread":None,"reading_recommended":False})
+   else: decision=decision.model_copy(update={"next_state":ConversationState.READY_FOR_READING})
    next_state=current if can_confirm_reading else (decision.next_state if decision.next_state in ALLOWED_TRANSITIONS[current] else current)
    if next_state != decision.next_state: decision=decision.model_copy(update={"next_state":next_state})
    conversation.state=next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value

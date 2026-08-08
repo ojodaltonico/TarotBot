@@ -28,6 +28,7 @@ def main():
  parser=argparse.ArgumentParser();parser.add_argument("--debug",action="store_true");debug=parser.parse_args().debug
  settings=get_settings()
  if settings.ai_provider=="gemini" and not settings.gemini_api_key:print("Gemini está seleccionado pero no hay GEMINI_API_KEY configurada.");return 2
+ if settings.ai_provider=="groq" and not settings.groq_api_key:print("Groq está seleccionado pero no hay GROQ_API_KEY configurada.");return 2
  print("TarotBot - laboratorio\n")
  while True:
   kind,arg=parse_command(input("Vos: "))

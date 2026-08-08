@@ -75,12 +75,18 @@ TarotBot incluye el gateway WhatsApp/Baileys, FastAPI con SQLite, un Tarot Engin
 
 ## Configuración IA y laboratorio
 
-Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_TRUST_ENV_PROXY`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
+Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_TRUST_ENV_PROXY`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
 
 `AI_TRUST_ENV_PROXY=false` (valor por defecto) hace que Gemini conecte directamente y no herede proxies configurados en el entorno. Usá `true` solamente si tu red necesita un proxy; entonces Gemini respetará `HTTP_PROXY`, `HTTPS_PROXY` y `ALL_PROXY`. Esta opción se aplica sólo al cliente HTTP de Gemini, sin cambiar variables del sistema.
 
 El gateway WhatsApp agrupa burbujas consecutivas por JID antes de llamar al backend. `WHATSAPP_MESSAGE_IDLE_MS` (12000) cierra un lote por silencio cuando no hay presencia; `WHATSAPP_TYPING_GRACE_MS` (15000) agrega margen después de que el contacto deja de escribir; y `WHATSAPP_MAX_COLLECTION_MS` (60000) fuerza el cierre para evitar un buffer eterno. Si WhatsApp no informa presencia, se utiliza únicamente idle y máximo.
 
-Para desarrollo sin red usá `AI_PROVIDER=fake`. Para Gemini configurá localmente `AI_PROVIDER=gemini` y `GEMINI_API_KEY=<tu clave local>`. Iniciá el backend y luego ejecutá `python scripts/chat_tarot.py` (o `--debug`). La consola admite `/reading [one_card|general_three|relationship_three]`, `/memory`, `/state`, `/refresh-memory`, `/reset`, `/help` y `/quit`.
+Para desarrollo sin red usá `AI_PROVIDER=fake`. Para Gemini configurá localmente `AI_PROVIDER=gemini` y `GEMINI_API_KEY=<tu clave local>`. Para Groq usá `AI_PROVIDER=groq`, `AI_CHAT_MODEL=openai/gpt-oss-120b`, `AI_MEMORY_MODEL=openai/gpt-oss-120b` y `GROQ_API_KEY=<tu clave local>`.
+
+Groq usa el SDK oficial de Python `groq`, en vez del cliente compatible con OpenAI. Las decisiones conversacionales y las interpretaciones se solicitan con JSON Schema Mode (`response_format`) y se validan otra vez con Pydantic; las respuestas de memoria permanecen textuales. El cliente desactiva reintentos automáticos para que cada intento quede auditado una sola vez. `python scripts/test_groq_connection.py` hace una única verificación explícita y sanitizada; nunca se ejecuta desde los tests.
+
+Iniciá el backend y luego ejecutá `python scripts/chat_tarot.py` (o `--debug`). La consola admite `/reading [one_card|general_three|relationship_three]`, `/memory`, `/state`, `/refresh-memory`, `/reset`, `/help` y `/quit`.
+
+Para pruebas por WhatsApp, `WHATSAPP_TYPING_CHARS_PER_SECOND` (22 por defecto), `WHATSAPP_MIN_TYPING_MS` (1800) y `WHATSAPP_MAX_TYPING_MS` (18000) calculan el tiempo de escritura por fragmento. `WHATSAPP_INTER_MESSAGE_DELAY_MS_MIN` y `WHATSAPP_INTER_MESSAGE_DELAY_MS_MAX` (600–1800) agregan una pausa acotada entre burbujas. Las respuestas largas se dividen sólo entre párrafos u oraciones completas, hasta cuatro mensajes. Cuando una tirada se interpreta, el backend entrega primero una única imagen renderizada `table_v2` y luego la lectura; si falla la interpretación, puede mostrar las cartas junto con un fallback, sin reintento automático ni cambio de estado a lectura activa.
 
 Las rutas `/internal/lab/...` son sólo para desarrollo local: chat, estado de usuario, lectura explícita, refresh de memoria y reset. El modo debug muestra estado, recomendación, uso y costo, nunca secretos ni payloads completos. Las conversaciones de laboratorio pueden persistirse localmente en SQLite; usá los debug payloads conscientemente y revisá las condiciones del provider y la retención antes de producción.

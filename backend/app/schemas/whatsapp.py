@@ -25,13 +25,16 @@ class OutboundMessage(BaseModel):
     orientation: str | None = None
     position: str | None = None
     image_path: str | None = None
-    typing_ms: int = Field(default=0, ge=0, le=10_000)
-    delay_ms: int = Field(default=0, ge=0, le=10_000)
+    caption: str | None = Field(default=None, max_length=1_000)
+    typing_ms: int = Field(default=0, ge=0, le=60_000)
+    delay_ms: int = Field(default=0, ge=0, le=60_000)
 
     @model_validator(mode="after")
     def text_messages_require_text(self) -> "OutboundMessage":
         if self.type == "text" and not self.text:
             raise ValueError("text is required for text messages")
+        if self.type == "image" and not self.image_path:
+            raise ValueError("image_path is required for image messages")
         return self
 
 

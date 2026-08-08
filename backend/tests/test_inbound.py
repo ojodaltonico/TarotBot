@@ -43,7 +43,8 @@ def test_whatsapp_fake_end_to_end_automatic_reading_and_follow_up(client):
     assert hello.status_code == question.status_code == ready.status_code == reading.status_code == 200
     assert ready.json()["duplicate"] is False
     assert len(reading.json()["messages"]) == 2
-    assert "Tirada:" in reading.json()["messages"][0]["text"]
+    assert reading.json()["messages"][0]["type"] == "image"
+    assert reading.json()["messages"][0]["image_path"].endswith("reading_1.jpg")
     assert "La tirada invita" in reading.json()["messages"][1]["text"]
 
     with client.app.state.SessionLocal() as session:
@@ -78,6 +79,7 @@ def test_duplicate_inbound_does_not_repeat_ai_or_reading(client):
 
     second = client.post("/internal/whatsapp/inbound", json=payload("dup-confirm", "sí"))
     assert first.json()["duplicate"] is False
+    assert first.json()["messages"][0]["type"] == "image"
     assert second.json() == {"messages": [], "duplicate": True}
     with client.app.state.SessionLocal() as session:
         assert session.scalar(select(func.count()).select_from(AICall)) == calls_before
@@ -204,7 +206,8 @@ def test_interpretation_failure_keeps_reading_state_safe_and_persists_fallback(c
             .where(Message.conversation_id == conversation.id, Message.direction == "outgoing")
             .order_by(Message.id.desc())
         )
-        assert result.messages[0].text == fallback.content
+        assert result.messages[0].type == "image"
+        assert result.messages[1].text == fallback.content
         assert conversation.state == "READY_FOR_READING"
         assert conversation.reading_recommended
         assert session.scalar(select(func.count()).select_from(TarotReading)) == 1

@@ -8,6 +8,7 @@ import dotenv from "dotenv"
 import qrcode from "qrcode-terminal"
 import { resolve } from "path"
 import { pathToFileURL } from "url"
+import { existsSync } from "fs"
 
 dotenv.config({ path: resolve(process.cwd(), "..", ".env") })
 
@@ -165,19 +166,31 @@ function scheduleReconnect(reason) {
   }, delay)
 }
 
-export async function sendBackendMessages(sock, recipient, messages) {
+export async function sendBackendMessages(sock, recipient, messages, { sleep = (milliseconds) => new Promise((resolveDelay) => setTimeout(resolveDelay, milliseconds)), log = console } = {}) {
   for (const message of messages || []) {
     const typingMs = Number(message.typing_ms || 0)
     const delayMs = Number(message.delay_ms || 0)
 
-    if (typingMs > 0 || delayMs > 0) {
+    if (delayMs > 0) await sleep(delayMs)
+    if (typingMs > 0) {
       await sock.sendPresenceUpdate("composing", recipient)
-      await new Promise((resolveDelay) => setTimeout(resolveDelay, Math.min(Math.max(typingMs, delayMs), 10_000)))
-      await sock.sendPresenceUpdate("paused", recipient)
+      try {
+        await sleep(typingMs)
+      } finally {
+        await sock.sendPresenceUpdate("paused", recipient)
+      }
     }
 
     if (message.type === "text" && message.text) {
       await sock.sendMessage(recipient, { text: message.text })
+    } else if (message.type === "image" && message.image_path) {
+      if (!existsSync(message.image_path)) {
+        log.warn?.("La imagen de la tirada no está disponible; se omite el envío.")
+        continue
+      }
+      const payload = { image: { url: message.image_path } }
+      if (message.caption) payload.caption = message.caption
+      await sock.sendMessage(recipient, payload)
     } else {
       console.warn(`El backend solicitó un tipo de mensaje no implementado: ${String(message.type || "desconocido")}.`)
     }
