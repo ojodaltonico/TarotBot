@@ -1,0 +1,792 @@
+{
+  "version": "rws-geldard-2026-04",
+  "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+  "collection_url": "https://commons.wikimedia.org/wiki/Category:Rider-Waite-Smith_tarot_deck_(Geldard)",
+  "runtime_mirror": {
+    "url": "https://github.com/metabismuth/tarot-json/tree/master/cards",
+    "license_note": "The mirror documents its 78 Rider-Waite-Smith scans as public domain in the United States.",
+    "used_when": "Wikimedia Commons blocks automated thumbnail requests; the Commons record below remains the per-card provenance and license verification source."
+  },
+  "cards": [
+    {
+      "card_id": "major_00_fool",
+      "filename": "major_00_fool.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Fool_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Fool (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_01_magician",
+      "filename": "major_01_magician.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Magician_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Magician (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_02_high_priestess",
+      "filename": "major_02_high_priestess.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_High_Priestess_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The High Priestess (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_03_empress",
+      "filename": "major_03_empress.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Empress_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Empress (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_04_emperor",
+      "filename": "major_04_emperor.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Emperor_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Emperor (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_05_hierophant",
+      "filename": "major_05_hierophant.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Hierophant_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Hierophant (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_06_lovers",
+      "filename": "major_06_lovers.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Lovers_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Lovers (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_07_chariot",
+      "filename": "major_07_chariot.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Chariot_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Chariot (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_08_strength",
+      "filename": "major_08_strength.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Strength_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Strength (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_09_hermit",
+      "filename": "major_09_hermit.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Hermit_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Hermit (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_10_wheel_of_fortune",
+      "filename": "major_10_wheel_of_fortune.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Wheel_of_Fortune_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Wheel of Fortune (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_11_justice",
+      "filename": "major_11_justice.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Justice_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Justice (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_12_hanged_man",
+      "filename": "major_12_hanged_man.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Hanged_Man_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Hanged Man (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_13_death",
+      "filename": "major_13_death.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Death_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Death (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_14_temperance",
+      "filename": "major_14_temperance.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Temperance_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Temperance (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_15_devil",
+      "filename": "major_15_devil.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Devil_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Devil (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_16_tower",
+      "filename": "major_16_tower.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Tower_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Tower (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_17_star",
+      "filename": "major_17_star.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Star_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Star (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_18_moon",
+      "filename": "major_18_moon.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Moon_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Moon (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_19_sun",
+      "filename": "major_19_sun.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_Sun_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The Sun (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_20_judgement",
+      "filename": "major_20_judgement.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Judgement_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Judgement (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "major_21_world",
+      "filename": "major_21_world.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:The_World_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "The World (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_01_ace",
+      "filename": "wands_01_ace.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ace_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ace of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_02_two",
+      "filename": "wands_02_two.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Two_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Two of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_03_three",
+      "filename": "wands_03_three.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Three_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Three of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_04_four",
+      "filename": "wands_04_four.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Four_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Four of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_05_five",
+      "filename": "wands_05_five.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Five_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Five of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_06_six",
+      "filename": "wands_06_six.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Six_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Six of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_07_seven",
+      "filename": "wands_07_seven.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Seven_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Seven of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_08_eight",
+      "filename": "wands_08_eight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Eight_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Eight of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_09_nine",
+      "filename": "wands_09_nine.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Nine_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Nine of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_10_ten",
+      "filename": "wands_10_ten.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ten_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ten of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_11_page",
+      "filename": "wands_11_page.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Page_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Page of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_12_knight",
+      "filename": "wands_12_knight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Knight_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Knight of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_13_queen",
+      "filename": "wands_13_queen.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Queen_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Queen of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "wands_14_king",
+      "filename": "wands_14_king.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:King_of_Wands_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "King of Wands (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_01_ace",
+      "filename": "cups_01_ace.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ace_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ace of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_02_two",
+      "filename": "cups_02_two.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Two_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Two of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_03_three",
+      "filename": "cups_03_three.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Three_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Three of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_04_four",
+      "filename": "cups_04_four.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Four_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Four of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_05_five",
+      "filename": "cups_05_five.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Five_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Five of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_06_six",
+      "filename": "cups_06_six.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Six_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Six of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_07_seven",
+      "filename": "cups_07_seven.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Seven_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Seven of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_08_eight",
+      "filename": "cups_08_eight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Eight_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Eight of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_09_nine",
+      "filename": "cups_09_nine.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Nine_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Nine of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_10_ten",
+      "filename": "cups_10_ten.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ten_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ten of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_11_page",
+      "filename": "cups_11_page.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Page_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Page of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_12_knight",
+      "filename": "cups_12_knight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Knight_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Knight of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_13_queen",
+      "filename": "cups_13_queen.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Queen_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Queen of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "cups_14_king",
+      "filename": "cups_14_king.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:King_of_Cups_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "King of Cups (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_01_ace",
+      "filename": "swords_01_ace.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:One_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "One of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_02_two",
+      "filename": "swords_02_two.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Two_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Two of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_03_three",
+      "filename": "swords_03_three.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Three_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Three of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_04_four",
+      "filename": "swords_04_four.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Four_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Four of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_05_five",
+      "filename": "swords_05_five.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Five_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Five of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_06_six",
+      "filename": "swords_06_six.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Six_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Six of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_07_seven",
+      "filename": "swords_07_seven.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Seven_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Seven of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_08_eight",
+      "filename": "swords_08_eight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Eight_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Eight of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_09_nine",
+      "filename": "swords_09_nine.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Nine_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Nine of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_10_ten",
+      "filename": "swords_10_ten.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ten_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ten of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_11_page",
+      "filename": "swords_11_page.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Page_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Page of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_12_knight",
+      "filename": "swords_12_knight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Knight_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Knight of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_13_queen",
+      "filename": "swords_13_queen.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Queen_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Queen of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "swords_14_king",
+      "filename": "swords_14_king.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:King_of_Swords_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "King of Swords (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_01_ace",
+      "filename": "pentacles_01_ace.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:One_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "One of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_02_two",
+      "filename": "pentacles_02_two.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Two_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Two of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_03_three",
+      "filename": "pentacles_03_three.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Three_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Three of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_04_four",
+      "filename": "pentacles_04_four.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Four_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Four of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_05_five",
+      "filename": "pentacles_05_five.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Five_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Five of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_06_six",
+      "filename": "pentacles_06_six.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Six_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Six of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_07_seven",
+      "filename": "pentacles_07_seven.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Seven_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Seven of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_08_eight",
+      "filename": "pentacles_08_eight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Eight_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Eight of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_09_nine",
+      "filename": "pentacles_09_nine.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Nine_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Nine of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_10_ten",
+      "filename": "pentacles_10_ten.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Ten_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Ten of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_11_page",
+      "filename": "pentacles_11_page.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Page_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Page of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_12_knight",
+      "filename": "pentacles_12_knight.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Knight_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Knight of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_13_queen",
+      "filename": "pentacles_13_queen.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:Queen_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "Queen of Pentacles (Rider-Waite Smith tarot deck).png"
+    },
+    {
+      "card_id": "pentacles_14_king",
+      "filename": "pentacles_14_king.webp",
+      "source_url": "https://commons.wikimedia.org/wiki/File:King_of_Pentacles_(Rider-Waite_Smith_tarot_deck).png",
+      "source_collection": "Rider-Waite-Smith tarot deck (Geldard), Wikimedia Commons",
+      "author": "Pamela Colman Smith",
+      "original_year": 1910,
+      "license_status": "Public Domain Mark 1.0 / public domain (per Wikimedia Commons file page)",
+      "source_file_identifier": "King of Pentacles (Rider-Waite Smith tarot deck).png"
+    }
+  ]
+}

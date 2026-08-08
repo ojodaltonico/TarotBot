@@ -1,11 +1,30 @@
-# Imágenes del mazo
+# Activos visuales del mazo
 
-El catálogo usa rutas relativas como `assets/tarot-cards/major_09_hermit.webp`; el nombre del archivo debe coincidir exactamente con `card_id`.
+`manifest.json` contiene el mapeo inmutable 78/78 entre `card_id` y la colección
+[Rider-Waite-Smith tarot deck (Geldard)](https://commons.wikimedia.org/wiki/Category:Rider-Waite-Smith_tarot_deck_(Geldard))
+de Wikimedia Commons. Los archivos fueron identificados como obra de **Pamela Colman Smith**, de **1910**, y sus fichas individuales declaran dominio público / **Public Domain Mark 1.0**.
 
-- Formato preferido: WebP; se admiten PNG y JPEG si se actualiza la ruta del catálogo.
-- Tamaño recomendado: 750 × 1200 px, orientación vertical, sin texto añadido por la aplicación.
-- No incorporar una imagen hasta registrar fuente, licencia, autoría y versión del archivo.
+- `cards/<card_id>.webp`: versión runtime normalizada a 700–900 px de alto, con proporción original conservada.
+- `table/table_v1.png`: fondo cenital original creado para TarotBot; no incorpora objetos, texto ni símbolos de terceros.
+- `manifest.json`: fuente, colección, autoría, año, estado de licencia y el identificador de archivo de Commons para cada carta.
 
-Como candidato de investigación está el Rider-Waite-Smith/Pamela Colman Smith original (1909). La [ficha de archivo de la Beinecke/Yale en Wikimedia Commons](https://commons.wikimedia.org/wiki/File:The_Empress,_Waite-Smith_Tarot_Deck,_Yale_University.jpg) identifica un ejemplar concreto como dominio público; la [biblioteca del Whitney](https://library.whitney.org/bib/67344) documenta la creación del mazo en 1909. Cada descarga debe verificarse en su ficha individual antes de incorporarla. No se incluye ninguna imagen en esta etapa.
+Para obtener o verificar el mazo:
 
-No usar ediciones contemporáneas, logotipos o restauraciones comerciales por inferencia: su licencia puede diferir de la obra histórica.
+```powershell
+backend\.venv\Scripts\python.exe scripts\download_tarot_images.py
+backend\.venv\Scripts\python.exe scripts\download_tarot_images.py --validate
+```
+
+La descarga usa las miniaturas oficiales de Commons y las convierte localmente a WebP; no almacena los PNG originales de ~11–14 MB. No sobrescribe archivos existentes salvo con `--force`.
+
+Si Commons aplica temporalmente su política anti-robots, el modo explícito `--source tarot-json --force` obtiene en una única descarga el conjunto abierto de 78 scans de [metabismuth/tarot-json](https://github.com/metabismuth/tarot-json), que documenta el mismo RWS como dominio público en EE. UU. Se usa para distribución técnica uniforme; el manifest conserva por carta la ficha de Commons que verifica autoría, año y licencia de la obra original.
+
+`backend/app/tarot/rendering.py` compone exclusivamente una lectura ya persistida. Su versión actual es `table_v2`, guarda el caché regenerable en `data/rendered-readings/reading_<id>.jpg` (ignorado por Git) y usa la semilla derivada de `reading_id` y `audit_metadata`; la misma lectura conserva el mismo layout.
+
+Vista local sin IA:
+
+```powershell
+backend\.venv\Scripts\python.exe scripts\render_tarot_reading.py --spread relationship_three --seed 123
+```
+
+El resultado tiene contrato de transporte futuro `{ "type": "image", "path": "...", "caption": "..." }`; este bloque no envía nada a WhatsApp.

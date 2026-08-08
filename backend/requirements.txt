@@ -4,6 +4,7 @@ google-genai>=1.0.0
 pydantic-settings==2.7.1
 SQLAlchemy==2.0.38
 uvicorn[standard]==0.34.0
+Pillow==11.1.0
 
 # Development and tests
 httpx==0.28.1
