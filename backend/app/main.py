@@ -4,8 +4,10 @@ from contextlib import asynccontextmanager
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
+from app.admin.routes import router as admin_router
 from app.core.config import ROOT_DIR, Settings, get_settings
 from app.db.database import create_session_factory, create_sqlite_engine
 
@@ -33,7 +35,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app = FastAPI(title="TarotBot Backend", version="0.1.0", lifespan=lifespan)
     app.state.engine = engine
     app.state.SessionLocal = create_session_factory(engine)
+    app.state.settings = settings
     app.include_router(router)
+    app.include_router(admin_router)
+    app.mount("/admin/static", StaticFiles(directory=str(ROOT_DIR / "backend" / "app" / "admin" / "static")), name="admin-static")
     return app
 
 
