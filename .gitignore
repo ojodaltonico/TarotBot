@@ -5,6 +5,9 @@ node_backend/whatsapp-sessions/
 *.log
 logs/
 .pytest_cache/
+pytest-cache-files-*/
+backend/tests/pytest-cache-files-*/
+backend/.pytest_tmp/
 backend/tests/*.db
 
 # Python

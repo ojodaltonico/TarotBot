@@ -29,3 +29,4 @@ def client(migrated_database, monkeypatch):
     application = create_app(settings)
     with TestClient(application) as test_client:
         yield test_client
+    database_path.unlink(missing_ok=True)

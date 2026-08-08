@@ -38,12 +38,21 @@ def setup(session, jid="scenario@test", state=ConversationState.NEW):
 def test_tarotista_prompt_has_required_safety_and_conversation_instructions():
     prompt = PROMPT.read_text(encoding="utf8").lower()
     required_fragments = [
-        "tarotista virtual", "no afirmes ser humana", "constantemente como ia", "preguntan directamente qué sos",
-        "español natural", "no conviertas la charla en un formulario", "información ya dada", "datos personales innecesarios",
-        "resulte cómodo", "certezas sobre el futuro", "tendencias, posibilidades", "enfermedades, embarazo, muerte, delitos, violencia, inversiones, apuestas",
-        "decisiones graves", "estados: new", "intents válidos", "únicamente json válido", "reading_recommended", "suggested_spread",
+        "tarotista virtual", "no afirmes ser humana", "no te presentes espontáneamente", "preguntan de forma directa",
+        "español rioplatense natural", "formulario", "máximo una pregunta concreta", "nombres completos", "resulte cómodo",
+        "certezas absolutas", "tendencias, posibilidades", "enfermedades, embarazo, muerte, delitos, violencia, inversiones, apuestas",
+        "decisiones graves", "no repitas", "continuidad", "amplía la consulta", "estados: new", "intents válidos", "únicamente json válido", "reading_recommended", "suggested_spread", "confirm_reading",
     ]
     assert all(fragment in prompt for fragment in required_fragments)
+
+
+def test_conversation_prompt_version_is_selectable_without_rewriting_history(client):
+    with client.app.state.SessionLocal() as session:
+        user, conversation = setup(session)
+        service = ConversationService(FakeAIProvider(response=decision("Contame un poco más.", "relationship", "CHATTING")), prompt_version="tarotista_v2")
+        service.chat(session, user, conversation, "Quiero mirar un vínculo.")
+        audit = session.scalar(select(AICall).where(AICall.conversation_id == conversation.id))
+        assert service.prompt.name == "tarotista_v2.txt" and audit.prompt_version == "tarotista_v2"
 
 
 def test_relationship_scenario_keeps_context_recommends_reading_and_audits(client):

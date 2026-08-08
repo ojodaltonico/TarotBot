@@ -11,6 +11,7 @@ if sys.prefix == sys.base_prefix and VENV_PYTHON.exists():
 
 sys.path.insert(0, str(ROOT_DIR / "backend"))
 
+from app.ai.gemini_provider import GeminiProvider
 from app.core.config import get_settings
 
 
@@ -37,10 +38,14 @@ if not settings.gemini_api_key:
     raise SystemExit("GEMINI_API_KEY is not configured locally.")
 
 try:
-    from google import genai
-
-    client = genai.Client(api_key=settings.gemini_api_key)
-    response = client.models.generate_content(
+    provider = GeminiProvider(
+        api_key=settings.gemini_api_key,
+        model=settings.ai_chat_model,
+        timeout_seconds=settings.ai_timeout_seconds,
+        enabled=settings.ai_enabled,
+        trust_env_proxy=settings.ai_trust_env_proxy,
+    )
+    response = provider.client.models.generate_content(
         model=settings.ai_chat_model,
         contents="Reply exactly: connection correct",
         config={"http_options": {"timeout": settings.ai_timeout_seconds * 1000}},

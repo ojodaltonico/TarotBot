@@ -16,6 +16,22 @@ const BACKEND_URL = process.env.WHATSAPP_BACKEND_URL || "http://127.0.0.1:5001"
 const INBOUND_URL = `${BACKEND_URL.replace(/\/$/, "")}/internal/whatsapp/inbound`
 const MAX_RECONNECT_DELAY_MS = 30_000
 
+export function getBackendRequestTimeoutMs(value = process.env.BACKEND_REQUEST_TIMEOUT_MS) {
+  const timeout = Number(value)
+  return Number.isFinite(timeout) && timeout >= 1_000 ? Math.floor(timeout) : 60_000
+}
+
+export function isGatewayTimeout(error) {
+  return error?.code === "ECONNABORTED" || /timeout.*exceeded/i.test(String(error?.message || ""))
+}
+
+export function getCollectionTimeoutMs(value, fallback) {
+  const timeout = Number(value)
+  return Number.isFinite(timeout) && timeout >= 1_000 ? Math.floor(timeout) : fallback
+}
+
+const BACKEND_REQUEST_TIMEOUT_MS = getBackendRequestTimeoutMs()
+
 let reconnectAttempts = 0
 let reconnectScheduled = false
 
@@ -53,6 +69,85 @@ export function extractInboundMessage(message) {
   }
 }
 
+export class MessageBatcher {
+  constructor({ processBatch, onBotPresence = async () => {}, idleMs = 12_000, typingGraceMs = 15_000, maxCollectionMs = 60_000, now = () => Date.now(), setTimer = setTimeout, clearTimer = clearTimeout, log = console }) {
+    this.processBatch = processBatch
+    this.onBotPresence = onBotPresence
+    this.idleMs = idleMs
+    this.typingGraceMs = typingGraceMs
+    this.maxCollectionMs = maxCollectionMs
+    this.now = now
+    this.setTimer = setTimer
+    this.clearTimer = clearTimer
+    this.log = log
+    this.chats = new Map()
+  }
+
+  enqueue(message) {
+    const chat = this._chat(message.sender)
+    if (!chat.pending) chat.pending = { messages: [], firstAt: this.now(), lastAt: this.now(), typingEndedAt: null }
+    chat.pending.messages.push(message)
+    chat.pending.lastAt = this.now()
+    this.log.info?.(`whatsapp_batch chat=${message.sender.slice(0, 8)} buffered=${chat.pending.messages.length}`)
+    this._schedule(message.sender, chat)
+  }
+
+  updatePresence(jid, presence) {
+    const chat = this._chat(jid)
+    if (presence === "composing") {
+      chat.composing = true
+    } else if (presence === "paused" || presence === "available" || presence === "unavailable") {
+      if (chat.composing) chat.pending && (chat.pending.typingEndedAt = this.now())
+      chat.composing = false
+    }
+    this.log.info?.(`whatsapp_presence chat=${jid.slice(0, 8)} presence=${presence}`)
+    this._schedule(jid, chat)
+  }
+
+  _chat(jid) {
+    if (!this.chats.has(jid)) this.chats.set(jid, { pending: null, composing: false, processing: false, timer: null })
+    return this.chats.get(jid)
+  }
+
+  _schedule(jid, chat) {
+    if (!chat.pending || chat.processing) return
+    if (chat.timer) this.clearTimer(chat.timer)
+    const now = this.now()
+    const elapsed = now - chat.pending.firstAt
+    const maxRemaining = Math.max(0, this.maxCollectionMs - elapsed)
+    let wait = maxRemaining
+    if (!chat.composing) {
+      const idleDue = chat.pending.lastAt + this.idleMs
+      const graceDue = chat.pending.typingEndedAt ? chat.pending.typingEndedAt + this.typingGraceMs : idleDue
+      wait = Math.min(maxRemaining, Math.max(0, idleDue - now, graceDue - now))
+    }
+    chat.timer = this.setTimer(() => this._close(jid), wait)
+  }
+
+  async _close(jid) {
+    const chat = this._chat(jid)
+    chat.timer = null
+    if (!chat.pending || chat.processing) return
+    const elapsed = this.now() - chat.pending.firstAt
+    if (chat.composing && elapsed < this.maxCollectionMs) return this._schedule(jid, chat)
+    const batch = chat.pending
+    chat.pending = null
+    chat.processing = true
+    const reason = elapsed >= this.maxCollectionMs ? "max_collection" : "idle"
+    this.log.info?.(`whatsapp_batch chat=${jid.slice(0, 8)} buffered=${batch.messages.length} close=${reason} duration_ms=${elapsed}`)
+    try {
+      await this.onBotPresence(jid, "composing")
+      await this.processBatch(jid, batch.messages)
+    } catch (error) {
+      this.log.error?.(`whatsapp_batch chat=${jid.slice(0, 8)} result=failed error=${error?.code || "request"}`)
+    } finally {
+      await this.onBotPresence(jid, "paused")
+      chat.processing = false
+      this._schedule(jid, chat)
+    }
+  }
+}
+
 function scheduleReconnect(reason) {
   if (reconnectScheduled) return
 
@@ -70,7 +165,7 @@ function scheduleReconnect(reason) {
   }, delay)
 }
 
-async function sendBackendMessages(sock, recipient, messages) {
+export async function sendBackendMessages(sock, recipient, messages) {
   for (const message of messages || []) {
     const typingMs = Number(message.typing_ms || 0)
     const delayMs = Number(message.delay_ms || 0)
@@ -83,25 +178,53 @@ async function sendBackendMessages(sock, recipient, messages) {
 
     if (message.type === "text" && message.text) {
       await sock.sendMessage(recipient, { text: message.text })
-    } else if (message.type === "image") {
-      console.warn("El backend solicitó una imagen, formato aún no implementado.")
+    } else {
+      console.warn(`El backend solicitó un tipo de mensaje no implementado: ${String(message.type || "desconocido")}.`)
     }
   }
 }
 
-async function handleInboundMessage(sock, rawMessage) {
+export async function dispatchBackendResponse(sock, recipient, response) {
+  if (response?.duplicate) return
+  await sendBackendMessages(sock, recipient, response?.messages)
+}
+
+export function createBatchProcessor(sock, request = axios.post) {
+  return async (sender, messages) => {
+    const first = messages[0]
+    const payload = {
+      sender,
+      message_id: first.message_id,
+      timestamp: first.timestamp,
+      message_type: first.message_type,
+      text: first.text,
+      messages: messages.map(({ message_id, timestamp, message_type, text }) => ({ message_id, timestamp, message_type, text })),
+    }
+    const response = await request(INBOUND_URL, payload, { timeout: BACKEND_REQUEST_TIMEOUT_MS })
+    await dispatchBackendResponse(sock, sender, response.data)
+  }
+}
+
+async function handleInboundMessage(batcher, rawMessage) {
   if (!rawMessage.message || rawMessage.key.fromMe) return
   if (isGroupJid(rawMessage.key.remoteJid)) return
 
   const inbound = extractInboundMessage(rawMessage)
   if (!inbound) return
 
+  batcher.enqueue(inbound)
+  return
+
   console.info(`Mensaje entrante recibido: id=${inbound.message_id} tipo=${inbound.message_type}`)
   try {
-    const response = await axios.post(INBOUND_URL, inbound, { timeout: 10_000 })
-    await sendBackendMessages(sock, inbound.sender, response.data?.messages)
+    const response = await axios.post(INBOUND_URL, inbound, { timeout: BACKEND_REQUEST_TIMEOUT_MS })
+    await dispatchBackendResponse(sock, inbound.sender, response.data)
   } catch (error) {
     const status = error.response?.status
+    if (isGatewayTimeout(error)) {
+      console.error(`Timeout del gateway para id=${inbound.message_id}; el backend puede seguir procesándolo.`)
+      return
+    }
     console.error(`Error procesando id=${inbound.message_id}${status ? ` status=${status}` : ""}:`, error.message)
     try {
       await sock.sendMessage(inbound.sender, {
@@ -144,8 +267,19 @@ async function startBot() {
   })
 
   sock.ev.on("creds.update", saveCreds)
+  const batcher = new MessageBatcher({
+    processBatch: createBatchProcessor(sock),
+    onBotPresence: (jid, presence) => sock.sendPresenceUpdate(presence, jid),
+    idleMs: getCollectionTimeoutMs(process.env.WHATSAPP_MESSAGE_IDLE_MS, 12_000),
+    typingGraceMs: getCollectionTimeoutMs(process.env.WHATSAPP_TYPING_GRACE_MS, 15_000),
+    maxCollectionMs: getCollectionTimeoutMs(process.env.WHATSAPP_MAX_COLLECTION_MS, 60_000),
+  })
+  sock.ev.on("presence.update", ({ id, presences }) => {
+    if (isGroupJid(id)) return
+    for (const presence of Object.values(presences || {})) batcher.updatePresence(id, presence.lastKnownPresence)
+  })
   sock.ev.on("messages.upsert", async ({ messages }) => {
-    for (const message of messages) await handleInboundMessage(sock, message)
+    for (const message of messages) await handleInboundMessage(batcher, message)
   })
 }
 

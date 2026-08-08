@@ -23,10 +23,11 @@ class AIResponse:
 class AIProviderError(Exception):
     """Provider failure with optional usage metadata and a stable category."""
 
-    def __init__(self, category: str = "provider_error", response: AIResponse | None = None):
+    def __init__(self, category: str = "provider_error", response: AIResponse | None = None, diagnostics: dict | None = None):
         super().__init__(category)
         self.category = category
         self.response = response
+        self.diagnostics = diagnostics or {}
 
 
 class AIProvider(ABC):

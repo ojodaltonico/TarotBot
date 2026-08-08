@@ -33,7 +33,7 @@ class TarotInterpretationService:
    output=InterpretationOutput.model_validate_json(response.text)
    result=TarotInterpretation(reading_id=reading_id,interpretation_text=output.interpretation,interpretation_summary=output.summary,prompt_version=PROMPT_VERSION,model=response.model,provider=response.provider);session.add(result);self._audit(session,user_id,conversation_id,reading_id,response,True,None,{"cards":len(cards)});session.commit();return result
   except Exception as error:
-   self._audit(session,user_id,conversation_id,reading_id,getattr(error,"response",None) or response,False,self._error_type(error),None);session.commit();return None
+   self._audit(session,user_id,conversation_id,reading_id,getattr(error,"response",None) or response,False,self._error_type(error),getattr(error,"diagnostics",None));session.commit();return None
  def _error_type(self,error):
   if isinstance(error,AIProviderError): return error.category
   if isinstance(error,ValidationError): return "validation_error"

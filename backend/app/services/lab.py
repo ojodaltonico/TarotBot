@@ -42,7 +42,7 @@ class LabService:
   if c.state!="READY_FOR_READING": raise ValueError("Conversation is not ready for a reading")
   rid,_=create_reading(s,user_id=u.id,conversation_id=c.id,spread_type=spread,question=question,trigger_message_id=trigger_message_id)
   result=TarotInterpretationService(self.provider,store_debug=self.store_debug).interpret_reading(s,rid,u.id,c.id)
-  if result:c.state="READING_ACTIVE";c.reading_recommended=False;c.suggested_spread=None;s.commit()
+  if result:c.state="READING_ACTIVE";c.reading_recommended=False;c.suggested_spread=None;c.last_action="none";s.commit()
   return s.get(TarotReading,rid),result,c
  def refresh_memory(self,s,key):
   u=s.scalar(select(User).where(User.whatsapp_jid==f"lab:{key}"))

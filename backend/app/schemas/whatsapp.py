@@ -4,18 +4,27 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 
-class InboundWhatsAppMessage(BaseModel):
-    sender: str = Field(min_length=1, max_length=255)
+class InboundWhatsAppPhysicalMessage(BaseModel):
     message_id: str = Field(min_length=1, max_length=255)
     timestamp: datetime
     message_type: Literal["text", "image"]
     text: str = Field(default="", max_length=10_000)
 
 
+class InboundWhatsAppMessage(InboundWhatsAppPhysicalMessage):
+    sender: str = Field(min_length=1, max_length=255)
+    messages: list[InboundWhatsAppPhysicalMessage] | None = Field(default=None, min_length=1, max_length=50)
+
+
 class OutboundMessage(BaseModel):
-    type: Literal["text", "image"] = "text"
+    type: Literal["text", "image", "tarot_card"] = "text"
     text: str | None = Field(default=None, max_length=10_000)
     image_url: str | None = None
+    card_id: str | None = None
+    name: str | None = None
+    orientation: str | None = None
+    position: str | None = None
+    image_path: str | None = None
     typing_ms: int = Field(default=0, ge=0, le=10_000)
     delay_ms: int = Field(default=0, ge=0, le=10_000)
 

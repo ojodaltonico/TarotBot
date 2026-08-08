@@ -11,10 +11,14 @@ from app.models.ai import AICall, UserMemory
 from app.models.message import Message
 from app.tarot.spreads import SPREADS
 
-PROMPT_VERSION="tarotista_v2"
-PROMPT=Path(__file__).parents[1]/"ai"/"prompts"/"tarotista_v2.txt"
+PROMPT_VERSION="tarotista_v3"
+PROMPT_DIR=Path(__file__).parents[1]/"ai"/"prompts"
+PROMPT=PROMPT_DIR/f"{PROMPT_VERSION}.txt"
 ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
+
+
+CONFIRMATION_NOT_READY="Todavía no hay una tirada lista. Si querés, contame qué te gustaría mirar."
 
 
 class EmptyResponseError(ValueError): pass
@@ -22,23 +26,31 @@ class InvalidResponseError(ValueError): pass
 
 class ConversationService:
  """Persist a safe fallback for any unusable AI decision; valid decisions alone may change state."""
- def __init__(self, provider: AIProvider, recent_messages=None, store_debug=False): self.provider=provider; self.recent_messages=get_settings().ai_recent_messages if recent_messages is None else recent_messages; self.store_debug=store_debug
- def chat(self, session: Session, user, conversation, text: str, message_id: str | None = None):
-  current_message=Message(conversation_id=conversation.id,whatsapp_message_id=message_id,direction="incoming",message_type="text",content=text)
-  session.add(current_message); session.flush()
-  history=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation.id,Message.id!=current_message.id,Message.message_type!="internal").order_by(Message.id.desc()).limit(self.recent_messages)).all()))
-  memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",PROMPT.read_text(encoding="utf8"))]
+ def __init__(self, provider: AIProvider, recent_messages=None, store_debug=False, prompt_version=None):
+  settings=get_settings();self.provider=provider;self.recent_messages=settings.ai_recent_messages if recent_messages is None else recent_messages;self.store_debug=store_debug;self.prompt_version=prompt_version or settings.ai_conversation_prompt_version;self.prompt=PROMPT_DIR/f"{self.prompt_version}.txt"
+  if not self.prompt.is_file(): raise ValueError("Unsupported conversation prompt version")
+ def chat(self, session: Session, user, conversation, text: str, message_id: str | None = None, created_at=None, physical_messages=None):
+  physical_messages=physical_messages or [{"message_id":message_id,"timestamp":created_at,"message_type":"text","text":text}]
+  current_messages=[]
+  for physical in physical_messages:
+   values={"conversation_id":conversation.id,"whatsapp_message_id":physical["message_id"],"direction":"incoming","message_type":physical.get("message_type","text"),"content":physical.get("text","")}
+   if physical.get("timestamp") is not None: values["created_at"]=physical["timestamp"]
+   current_messages.append(Message(**values))
+  session.add_all(current_messages); session.flush()
+  current_ids=[message.id for message in current_messages]
+  history=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation.id,Message.id.not_in(current_ids),Message.message_type!="internal").order_by(Message.id.desc()).limit(self.recent_messages)).all()))
+  memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",self.prompt.read_text(encoding="utf8"))]
   if memory: messages.append(AIMessage("system",f"Memoria: {memory.summary}"))
   messages += [AIMessage("user" if m.direction=="incoming" else "assistant",m.content) for m in history]
   messages.append(AIMessage("user",text))
+  current=ConversationState(conversation.state)
   try:
-   response=self.provider.generate(messages,purpose="conversation",options={"response_schema": ConversationDecision})
+   response=self.provider.generate(messages,purpose="conversation",options={"response_schema": ConversationDecision,"conversation_state":current.value})
    if not response.text or not response.text.strip(): raise EmptyResponseError()
    decision=ConversationDecision.model_validate_json(response.text)
    if not decision.reply.strip(): raise InvalidResponseError()
-   current=ConversationState(conversation.state)
    can_confirm_reading=(current is ConversationState.READY_FOR_READING and conversation.reading_recommended and conversation.suggested_spread in SPREADS and decision.action is ConversationAction.confirm_reading)
-   if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none})
+   if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none,"reply":CONFIRMATION_NOT_READY,"next_state":current,"reading_recommended":False,"suggested_spread":None})
    if not decision.reading_recommended: decision=decision.model_copy(update={"suggested_spread":None})
    elif decision.suggested_spread not in SPREADS: decision=decision.model_copy(update={"suggested_spread":None,"reading_recommended":False})
    next_state=current if can_confirm_reading else (decision.next_state if decision.next_state in ALLOWED_TRANSITIONS[current] else current)
@@ -50,7 +62,7 @@ class ConversationService:
   except Exception as error:
    audit_response=getattr(error,"response",None)
    if audit_response is None and "response" in locals(): audit_response=response
-   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=FALLBACK)); self._audit(session,user.id,conversation.id,audit_response,False,self._error_category(error),None); session.commit(); return ConversationDecision(reply=FALLBACK,intent="unclear",next_state=ConversationState(conversation.state)),None
+   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=FALLBACK)); self._audit(session,user.id,conversation.id,audit_response,False,self._error_category(error),getattr(error,"diagnostics",None)); session.commit(); return ConversationDecision(reply=FALLBACK,intent="unclear",next_state=ConversationState(conversation.state)),None
  def _error_category(self,error):
   if isinstance(error,AIProviderError): return error.category
   if isinstance(error,TimeoutError): return "timeout"
@@ -59,4 +71,4 @@ class ConversationService:
   if isinstance(error,ValidationError): return "validation_error"
   return "provider_error"
  def _audit(self,s,u,c,r,ok,error,payload):
-  s.add(AICall(user_id=u,conversation_id=c,reading_id=None,purpose="conversation",provider=getattr(r,"provider","unknown"),model=getattr(r,"model","unknown"),prompt_version=PROMPT_VERSION,input_tokens=getattr(r,"input_tokens",0),cached_input_tokens=getattr(r,"cached_tokens",None),output_tokens=getattr(r,"output_tokens",0),latency_ms=getattr(r,"latency_ms",0),success=ok,error_type=error,estimated_cost_usd=estimate_cost(getattr(r,"provider",""),getattr(r,"model",""),getattr(r,"input_tokens",0),getattr(r,"output_tokens",0),getattr(r,"cached_tokens",None)),debug_payload=json.dumps(payload) if self.store_debug else None))
+  s.add(AICall(user_id=u,conversation_id=c,reading_id=None,purpose="conversation",provider=getattr(r,"provider","unknown"),model=getattr(r,"model","unknown"),prompt_version=self.prompt_version,input_tokens=getattr(r,"input_tokens",0),cached_input_tokens=getattr(r,"cached_tokens",None),output_tokens=getattr(r,"output_tokens",0),latency_ms=getattr(r,"latency_ms",0),success=ok,error_type=error,estimated_cost_usd=estimate_cost(getattr(r,"provider",""),getattr(r,"model",""),getattr(r,"input_tokens",0),getattr(r,"output_tokens",0),getattr(r,"cached_tokens",None)),debug_payload=json.dumps(payload) if self.store_debug else None))

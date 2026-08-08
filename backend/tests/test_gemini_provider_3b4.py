@@ -26,9 +26,10 @@ class MockClient:
 def install_mock_sdk(monkeypatch, outcome):
     captured = {}
 
-    def client_factory(*, api_key):
+    def client_factory(*, api_key, http_options=None):
         client = MockClient(api_key, outcome)
         captured["client"] = client
+        captured["http_options"] = http_options
         return client
 
     google = ModuleType("google")
@@ -65,6 +66,7 @@ def test_native_structured_output_validates_parsed_result_and_maps_metadata(monk
 
     call = captured["client"].calls[0]
     assert captured["client"].api_key == "test-key"
+    assert captured["http_options"] == {"client_args": {"trust_env": False}}
     assert call["model"] == "gemini-2.5-flash"
     assert call["contents"] == "system: Contexto\nuser: Hola"
     assert call["config"]["response_mime_type"] == "application/json"

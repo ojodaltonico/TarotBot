@@ -23,9 +23,13 @@ def get_session(request: Request) -> Session:
     return request.app.state.SessionLocal()
 
 def lab_service():
+    return LabService(ai_provider_from_settings())
+
+
+def ai_provider_from_settings():
     settings=get_settings()
-    if settings.ai_provider=="fake": return LabService(FakeAIProvider(mode="demo"))
-    if settings.ai_provider=="gemini": return LabService(GeminiProvider(api_key=settings.gemini_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled))
+    if settings.ai_provider=="fake": return FakeAIProvider(mode="demo")
+    if settings.ai_provider=="gemini": return GeminiProvider(api_key=settings.gemini_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled,trust_env_proxy=settings.ai_trust_env_proxy)
     raise HTTPException(status_code=422,detail="Unsupported AI_PROVIDER")
 
 
@@ -38,7 +42,8 @@ def health() -> dict[str, str]:
 def whatsapp_inbound(inbound: InboundWhatsAppMessage, request: Request) -> InboundWhatsAppResponse:
     session = get_session(request)
     try:
-        return process_inbound_message(session, inbound)
+        settings = get_settings()
+        return process_inbound_message(session, inbound, ai_provider_from_settings(), store_debug=settings.ai_store_debug_payloads)
     finally:
         session.close()
 

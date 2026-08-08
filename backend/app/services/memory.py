@@ -1,6 +1,6 @@
 from pathlib import Path
 from sqlalchemy import select
-from app.ai.provider import AIMessage, AIProvider
+from app.ai.provider import AIMessage, AIProvider, AIProviderError
 from app.ai.costs import estimate_cost
 from app.models.message import Message
 from app.repositories.ai_repository import add_call, get_memory, upsert_memory
@@ -23,6 +23,6 @@ class MemoryService:
    memory=upsert_memory(session,user_id,response.text.strip())
    self._audit(session,user_id,conversation_id,response,True,None,{"history":context}); session.commit(); return memory
   except Exception as error:
-   self._audit(session,user_id,conversation_id,None,False,type(error).__name__,None); session.commit(); return get_memory(session,user_id)
+   self._audit(session,user_id,conversation_id,getattr(error,"response",None),False,error.category if isinstance(error,AIProviderError) else type(error).__name__,getattr(error,"diagnostics",None)); session.commit(); return get_memory(session,user_id)
  def _audit(self,s,u,c,r,ok,error,payload):
   add_call(s,user_id=u,conversation_id=c,reading_id=None,purpose="memory_summary",provider=getattr(r,"provider","unknown"),model=getattr(r,"model","unknown"),prompt_version=PROMPT_VERSION,input_tokens=getattr(r,"input_tokens",0),cached_input_tokens=getattr(r,"cached_tokens",None),output_tokens=getattr(r,"output_tokens",0),latency_ms=getattr(r,"latency_ms",0),success=ok,error_type=error,estimated_cost_usd=estimate_cost(getattr(r,"provider",""),getattr(r,"model",""),getattr(r,"input_tokens",0),getattr(r,"output_tokens",0),getattr(r,"cached_tokens",None)),debug_payload=str(payload) if self.store_debug else None)

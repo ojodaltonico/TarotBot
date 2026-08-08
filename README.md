@@ -5,8 +5,8 @@ Infraestructura conversacional inicial para una tarotista virtual por WhatsApp. 
 ## Arquitectura
 
 ```text
-WhatsApp -> Baileys (Node) -> FastAPI (127.0.0.1:5001) -> SQLite
-         <- mensajes temporales  <- FastAPI
+WhatsApp -> Baileys (Node) -> FastAPI -> ConversationService -> Tarot Engine / IA -> SQLite
+         <- mensajes ordenados   <- FastAPI
 ```
 
 El gateway Node recibe mensajes privados, los normaliza y los envía a `POST /internal/whatsapp/inbound`. FastAPI crea o localiza el usuario y su conversación activa, persiste el mensaje y devuelve una respuesta temporal. El gateway la envía a WhatsApp.
@@ -36,11 +36,15 @@ Al iniciar el gateway se mostrará un QR en la consola si no hay una sesión vá
 
 Todos estos elementos están ignorados por Git.
 
-## Estado del MVP
+## WhatsApp y flujo conversacional
 
 Por cada mensaje privado de texto (o caption de imagen), el sistema persiste un usuario, una conversación y el mensaje entrante. Devuelve y guarda la respuesta temporal: `Hola. TarotBot está conectado correctamente. 🔮`. El identificador de mensaje de WhatsApp es único: reenviar el mismo ID no produce una segunda respuesta ni duplica datos.
 
 Los grupos se descartan por ahora. El contrato ya admite metadatos de typing/delay e imágenes para fases posteriores, aunque la respuesta temporal actual es solo texto.
+
+El endpoint `POST /internal/whatsapp/inbound` procesa mensajes privados de texto y captions de imágenes con `ConversationService`. Su respuesta contiene `duplicate` y una lista ordenada `messages[]`; en 4A el gateway entrega únicamente acciones `text`. Las cartas y su interpretación se devuelven como texto hasta que se implemente envío de imágenes. Un `message_id` repetido no vuelve a llamar a la IA ni crea otra lectura. Imágenes sin caption y tipos no soportados se ignoran silenciosamente; los grupos siguen excluidos.
+
+Para desarrollo sin red, usá `AI_PROVIDER=fake`: permite recorrer conversación, recomendación, confirmación natural y tirada automática de punta a punta. Typing, demoras e imágenes quedan pendientes.
 
 ## Tarot Engine
 
@@ -71,7 +75,11 @@ TarotBot incluye el gateway WhatsApp/Baileys, FastAPI con SQLite, un Tarot Engin
 
 ## Configuración IA y laboratorio
 
-Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
+Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_TRUST_ENV_PROXY`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
+
+`AI_TRUST_ENV_PROXY=false` (valor por defecto) hace que Gemini conecte directamente y no herede proxies configurados en el entorno. Usá `true` solamente si tu red necesita un proxy; entonces Gemini respetará `HTTP_PROXY`, `HTTPS_PROXY` y `ALL_PROXY`. Esta opción se aplica sólo al cliente HTTP de Gemini, sin cambiar variables del sistema.
+
+El gateway WhatsApp agrupa burbujas consecutivas por JID antes de llamar al backend. `WHATSAPP_MESSAGE_IDLE_MS` (12000) cierra un lote por silencio cuando no hay presencia; `WHATSAPP_TYPING_GRACE_MS` (15000) agrega margen después de que el contacto deja de escribir; y `WHATSAPP_MAX_COLLECTION_MS` (60000) fuerza el cierre para evitar un buffer eterno. Si WhatsApp no informa presencia, se utiliza únicamente idle y máximo.
 
 Para desarrollo sin red usá `AI_PROVIDER=fake`. Para Gemini configurá localmente `AI_PROVIDER=gemini` y `GEMINI_API_KEY=<tu clave local>`. Iniciá el backend y luego ejecutá `python scripts/chat_tarot.py` (o `--debug`). La consola admite `/reading [one_card|general_three|relationship_three]`, `/memory`, `/state`, `/refresh-memory`, `/reset`, `/help` y `/quit`.
 
