@@ -1,4 +1,3 @@
-import base64
 import json
 
 from fastapi.testclient import TestClient
@@ -14,13 +13,8 @@ from app.models.user import User
 from app.services.tarot_readings import create_reading
 
 
-def auth(username="admin", password="secret"):
-    value = base64.b64encode(f"{username}:{password}".encode()).decode()
-    return {"Authorization": f"Basic {value}"}
-
-
 def admin_client(tmp_path):
-    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'admin.db'}", run_migrations_on_startup=True, admin_enabled=True, admin_username="admin", admin_password="secret"))
+    app = create_app(Settings(database_url=f"sqlite:///{tmp_path / 'admin.db'}", run_migrations_on_startup=True, admin_enabled=True))
     return TestClient(app)
 
 
@@ -40,36 +34,33 @@ def fixture_data(client):
         return conversation.id, reading_id, user.whatsapp_jid
 
 
-def test_admin_auth_disabled_and_invalid(tmp_path):
+def test_admin_opens_without_credentials(tmp_path):
     disabled = TestClient(create_app(Settings(database_url=f"sqlite:///{tmp_path / 'disabled.db'}", run_migrations_on_startup=True, admin_enabled=False)))
     assert disabled.get("/admin").status_code == 404
     with admin_client(tmp_path) as client:
-        assert client.get("/admin").status_code == 401
-        assert client.get("/admin", headers=auth(password="wrong")).status_code == 401
-        response = client.get("/admin", headers=auth())
+        response = client.get("/admin")
         assert response.status_code == 200 and response.headers["cache-control"].startswith("no-store") and response.headers["x-robots-tag"] == "noindex, nofollow"
 
 
 def test_admin_home_lists_anonymized_conversations_and_metrics(tmp_path):
     with admin_client(tmp_path) as client:
         conversation_id, _, jid = fixture_data(client)
-        response = client.get("/admin", headers=auth())
+        response = client.get("/admin")
         assert response.status_code == 200
         assert "…4821" in response.text and jid not in response.text and "input tokens" in response.text
-        listing = client.get("/admin/conversations?state=READING_ACTIVE&readings=true", headers=auth())
+        listing = client.get("/admin/conversations?state=READING_ACTIVE&readings=true")
         assert listing.status_code == 200 and f"/admin/conversations/{conversation_id}" in listing.text
 
 
 def test_detail_reading_image_errors_and_privacy(tmp_path):
     with admin_client(tmp_path) as client:
         conversation_id, reading_id, jid = fixture_data(client)
-        detail = client.get(f"/admin/conversations/{conversation_id}", headers=auth())
+        detail = client.get(f"/admin/conversations/{conversation_id}")
         assert detail.status_code == 200
         assert "Consulta ficticia." in detail.text and "Memoria ficticia." in detail.text and "Interpretación ficticia." in detail.text
         assert jid not in detail.text and "rate_limit" in detail.text
-        image = client.get(f"/admin/readings/{reading_id}/image", headers=auth())
+        image = client.get(f"/admin/readings/{reading_id}/image")
         assert image.status_code == 200 and image.headers["content-type"] == "image/jpeg"
-        assert client.get("/admin/readings/999999/image", headers=auth()).status_code == 404
-        errors = client.get("/admin/errors?provider=groq&error_type=rate_limit", headers=auth())
+        assert client.get("/admin/readings/999999/image").status_code == 404
+        errors = client.get("/admin/errors?provider=groq&error_type=rate_limit")
         assert errors.status_code == 200 and "rate_limit" in errors.text and jid not in errors.text
-        assert client.get(f"/admin/readings/{reading_id}/image").status_code == 401

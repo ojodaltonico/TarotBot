@@ -1,4 +1,6 @@
 import json
+import re
+import unicodedata
 from pathlib import Path
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -16,6 +18,7 @@ PROMPT_DIR=Path(__file__).parents[1]/"ai"/"prompts"
 PROMPT=PROMPT_DIR/f"{PROMPT_VERSION}.txt"
 ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION,ConversationState.READY_FOR_READING},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
+SIMPLIFICATION_FOLLOW_UPS={"o sea","entonces","en resumen","que significa","pero si o no","y eso que quiere decir"}
 
 
 CONFIRMATION_NOT_READY="Todavía no hay una tirada lista. Si querés, contame qué te gustaría mirar."
@@ -23,6 +26,12 @@ CONFIRMATION_NOT_READY="Todavía no hay una tirada lista. Si querés, contame qu
 
 class EmptyResponseError(ValueError): pass
 class InvalidResponseError(ValueError): pass
+
+
+def is_simplification_follow_up(text: str) -> bool:
+ normalized=unicodedata.normalize("NFKD",text).encode("ascii","ignore").decode().lower()
+ normalized=re.sub(r"[^a-z0-9]+"," ",normalized).strip()
+ return normalized in SIMPLIFICATION_FOLLOW_UPS
 
 class ConversationService:
  """Persist a safe fallback for any unusable AI decision; valid decisions alone may change state."""
@@ -39,11 +48,13 @@ class ConversationService:
   session.add_all(current_messages); session.flush()
   current_ids=[message.id for message in current_messages]
   history=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation.id,Message.id.not_in(current_ids),Message.message_type!="internal").order_by(Message.id.desc()).limit(self.recent_messages)).all()))
+  current=ConversationState(conversation.state)
   memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",self.prompt.read_text(encoding="utf8"))]
+  if current in {ConversationState.READING_ACTIVE,ConversationState.FOLLOW_UP} and is_simplification_follow_up(text):
+   messages.append(AIMessage("system","El último mensaje pide una síntesis de la tirada activa. Respondé directo en 40 a 100 palabras, con uno o dos párrafos breves. No expliques carta por carta ni recites las tres; respondé la consulta original con lenguaje de tendencia o posibilidad, sin convertir emociones, intenciones o hechos de otra persona en certezas."))
   if memory: messages.append(AIMessage("system",f"Memoria: {memory.summary}"))
   messages += [AIMessage("user" if m.direction=="incoming" else "assistant",m.content) for m in history]
   messages.append(AIMessage("user",text))
-  current=ConversationState(conversation.state)
   try:
    response=self.provider.generate(messages,purpose="conversation",options={"response_schema": ConversationDecision,"conversation_state":current.value})
    if not response.text or not response.text.strip(): raise EmptyResponseError()

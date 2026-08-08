@@ -33,8 +33,6 @@ class Settings(BaseSettings):
     whatsapp_inter_message_delay_ms_min: int = 600
     whatsapp_inter_message_delay_ms_max: int = 1800
     admin_enabled: bool = True
-    admin_username: str = ""
-    admin_password: str = ""
     run_migrations_on_startup: bool = True
 
     model_config = SettingsConfigDict(

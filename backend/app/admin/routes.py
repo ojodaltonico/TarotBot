@@ -2,12 +2,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 
-from app.admin.auth import require_admin, security
 from app.admin import service
 from app.tarot.rendering import TarotRenderingError, render_reading
 
@@ -17,8 +15,9 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 HEADERS = {"Cache-Control": "no-store, max-age=0", "X-Robots-Tag": "noindex, nofollow"}
 
 
-def guarded(request: Request, credentials: HTTPBasicCredentials | None) -> None:
-    require_admin(request, credentials)
+def ensure_admin_enabled(request: Request) -> None:
+    if not request.app.state.settings.admin_enabled:
+        raise HTTPException(status_code=404, detail="Not found")
 
 
 def render(request: Request, name: str, context: dict):
@@ -30,8 +29,9 @@ def session_for(request: Request):
 
 
 @router.get("/admin")
-def home(request: Request, credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def home(request: Request):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         rows, _ = service.conversations(session, page=1)
         settings = request.app.state.settings
@@ -41,8 +41,9 @@ def home(request: Request, credentials: HTTPBasicCredentials | None = Depends(se
 
 
 @router.get("/admin/conversations")
-def conversation_list(request: Request, page: int = 1, q: str = "", state: str = "", intent: str = "", channel: str = "", readings: bool = False, errors: bool = False, provider: str = "", credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def conversation_list(request: Request, page: int = 1, q: str = "", state: str = "", intent: str = "", channel: str = "", readings: bool = False, errors: bool = False, provider: str = ""):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         filters = {"q": q, "state": state, "intent": intent, "channel": channel, "readings": readings, "errors": errors, "provider": provider}
         rows, total = service.conversations(session, page=max(page, 1), filters=filters)
@@ -51,8 +52,9 @@ def conversation_list(request: Request, page: int = 1, q: str = "", state: str =
 
 
 @router.get("/admin/conversations/{conversation_id}")
-def conversation_page(conversation_id: int, request: Request, credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def conversation_page(conversation_id: int, request: Request):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         detail = service.conversation_detail(session, conversation_id)
         if detail is None: raise HTTPException(status_code=404, detail="Conversation not found")
@@ -63,8 +65,9 @@ def conversation_page(conversation_id: int, request: Request, credentials: HTTPB
 
 
 @router.get("/admin/readings")
-def reading_list(request: Request, page: int = 1, credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def reading_list(request: Request, page: int = 1):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         rows, total = service.readings(session, page=max(page, 1))
         return render(request, "readings.html", {"rows": rows, "page": max(page, 1), "total": total, "page_size": service.PAGE_SIZE, "anonymize": service.anonymize})
@@ -72,8 +75,9 @@ def reading_list(request: Request, page: int = 1, credentials: HTTPBasicCredenti
 
 
 @router.get("/admin/readings/{reading_id}/image")
-def reading_image(reading_id: int, request: Request, credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def reading_image(reading_id: int, request: Request):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         rendered = render_reading(session, reading_id)
         return FileResponse(rendered.path, media_type="image/jpeg", headers=HEADERS)
@@ -83,8 +87,9 @@ def reading_image(reading_id: int, request: Request, credentials: HTTPBasicCrede
 
 
 @router.get("/admin/errors")
-def error_list(request: Request, page: int = 1, provider: str = "", error_type: str = "", purpose: str = "", credentials: HTTPBasicCredentials | None = Depends(security)):
-    guarded(request, credentials); session = session_for(request)
+def error_list(request: Request, page: int = 1, provider: str = "", error_type: str = "", purpose: str = ""):
+    ensure_admin_enabled(request)
+    session = session_for(request)
     try:
         filters = {"provider": provider, "error_type": error_type, "purpose": purpose}
         rows, total = service.errors(session, page=max(page, 1), filters=filters)
