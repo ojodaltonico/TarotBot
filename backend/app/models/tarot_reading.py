@@ -15,6 +15,7 @@ class TarotReading(Base):
     conversation_id: Mapped[int] = mapped_column(ForeignKey("conversations.id"), nullable=False, index=True)
     spread_type: Mapped[str] = mapped_column(String(64), nullable=False)
     question: Mapped[str | None] = mapped_column(Text, nullable=True)
+    trigger_message_id: Mapped[str | None] = mapped_column(String(255), nullable=True, unique=True)
     audit_metadata: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     cards: Mapped[list["TarotReadingCard"]] = relationship(

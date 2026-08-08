@@ -18,6 +18,7 @@ def create_reading(
     seed: int | str | None = None,
     reversed_enabled: bool = True,
     reversed_probability: float = 0.5,
+    trigger_message_id: str | None = None,
 ) -> tuple[int, DrawResult]:
     user = session.get(User, user_id)
     conversation = session.get(Conversation, conversation_id)
@@ -27,7 +28,8 @@ def create_reading(
         spread_type, seed=seed, reversed_enabled=reversed_enabled, reversed_probability=reversed_probability
     )
     reading = persist_reading(
-        session, user_id=user.id, conversation_id=conversation.id, question=question, result=result
+        session, user_id=user.id, conversation_id=conversation.id, question=question, result=result,
+        trigger_message_id=trigger_message_id,
     )
     session.commit()
     return reading.id, result

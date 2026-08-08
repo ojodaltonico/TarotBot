@@ -17,7 +17,7 @@ def test_console_renderers_hide_secrets():
  assert "READY_FOR_READING" in console.state_text(data) and "resumen" in console.memory_text(data) and "provider:" in console.debug_text(data) and "GEMINI_API_KEY" not in console.debug_text(data)
  assert "No hay" in console.reading_error_text("No valid reading suggestion is available") and "/reading" in console.help_text()
 def test_console_gemini_without_key_aborts_cleanly():
- env={**os.environ,"AI_PROVIDER":"gemini"};env.pop("GEMINI_API_KEY",None)
+ env={**os.environ,"AI_PROVIDER":"gemini","GEMINI_API_KEY":""}
  result=subprocess.run([sys.executable,str(Path(__file__).parents[2]/"scripts"/"chat_tarot.py")],capture_output=True,text=True,env=env,timeout=10)
  assert result.returncode==2 and "GEMINI_API_KEY configurada" in result.stdout and "Traceback" not in result.stderr
 @pytest.mark.parametrize("spread",["one_card","general_three","relationship_three"])

@@ -16,11 +16,12 @@ def card_snapshot(card: TarotCard, deck_version: str) -> str:
 
 
 def create_reading(
-    session: Session, *, user_id: int, conversation_id: int, question: str | None, result: DrawResult
+    session: Session, *, user_id: int, conversation_id: int, question: str | None, result: DrawResult,
+    trigger_message_id: str | None = None,
 ) -> TarotReading:
     reading = TarotReading(
         user_id=user_id, conversation_id=conversation_id, spread_type=result.spread_type,
-        question=question, audit_metadata=json.dumps(result.audit_metadata, ensure_ascii=False, sort_keys=True),
+        question=question, trigger_message_id=trigger_message_id, audit_metadata=json.dumps(result.audit_metadata, ensure_ascii=False, sort_keys=True),
     )
     session.add(reading)
     session.flush()

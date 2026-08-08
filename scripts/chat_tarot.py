@@ -1,5 +1,8 @@
 """Interactive local laboratory client for the internal lab API."""
-import argparse,json,urllib.request,os,sys
+import argparse,json,urllib.request,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]/"backend"))
+from app.core.config import get_settings
 BASE="http://127.0.0.1:5001/internal/lab";KEY="local_test";SPREADS={"one_card","general_three","relationship_three"}
 def parse_command(line):
  p=line.strip().split()
@@ -23,7 +26,8 @@ def call(path,data=None):
  req=urllib.request.Request(BASE+path,data=json.dumps(data).encode() if data is not None else None,headers={"Content-Type":"application/json"},method="POST" if data is not None else "GET");return json.loads(urllib.request.urlopen(req).read())
 def main():
  parser=argparse.ArgumentParser();parser.add_argument("--debug",action="store_true");debug=parser.parse_args().debug
- if os.getenv("AI_PROVIDER")=="gemini" and not os.getenv("GEMINI_API_KEY"):print("Gemini está seleccionado pero no hay GEMINI_API_KEY configurada.");return 2
+ settings=get_settings()
+ if settings.ai_provider=="gemini" and not settings.gemini_api_key:print("Gemini está seleccionado pero no hay GEMINI_API_KEY configurada.");return 2
  print("TarotBot - laboratorio\n")
  while True:
   kind,arg=parse_command(input("Vos: "))

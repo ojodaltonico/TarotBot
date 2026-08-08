@@ -6,13 +6,13 @@ from sqlalchemy.orm import Session
 from app.ai.provider import AIMessage, AIProvider, AIProviderError, AIResponse
 from app.ai.costs import estimate_cost
 from app.core.config import get_settings
-from app.conversation.schemas import ConversationDecision, ConversationState
+from app.conversation.schemas import ConversationAction, ConversationDecision, ConversationState
 from app.models.ai import AICall, UserMemory
 from app.models.message import Message
 from app.tarot.spreads import SPREADS
 
-PROMPT_VERSION="tarotista_v1"
-PROMPT=Path(__file__).parents[1]/"ai"/"prompts"/"tarotista_v1.txt"
+PROMPT_VERSION="tarotista_v2"
+PROMPT=Path(__file__).parents[1]/"ai"/"prompts"/"tarotista_v2.txt"
 ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
 
@@ -23,8 +23,8 @@ class InvalidResponseError(ValueError): pass
 class ConversationService:
  """Persist a safe fallback for any unusable AI decision; valid decisions alone may change state."""
  def __init__(self, provider: AIProvider, recent_messages=None, store_debug=False): self.provider=provider; self.recent_messages=get_settings().ai_recent_messages if recent_messages is None else recent_messages; self.store_debug=store_debug
- def chat(self, session: Session, user, conversation, text: str):
-  current_message=Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="incoming",message_type="text",content=text)
+ def chat(self, session: Session, user, conversation, text: str, message_id: str | None = None):
+  current_message=Message(conversation_id=conversation.id,whatsapp_message_id=message_id,direction="incoming",message_type="text",content=text)
   session.add(current_message); session.flush()
   history=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation.id,Message.id!=current_message.id,Message.message_type!="internal").order_by(Message.id.desc()).limit(self.recent_messages)).all()))
   memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",PROMPT.read_text(encoding="utf8"))]
@@ -36,12 +36,16 @@ class ConversationService:
    if not response.text or not response.text.strip(): raise EmptyResponseError()
    decision=ConversationDecision.model_validate_json(response.text)
    if not decision.reply.strip(): raise InvalidResponseError()
+   current=ConversationState(conversation.state)
+   can_confirm_reading=(current is ConversationState.READY_FOR_READING and conversation.reading_recommended and conversation.suggested_spread in SPREADS and decision.action is ConversationAction.confirm_reading)
+   if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none})
    if not decision.reading_recommended: decision=decision.model_copy(update={"suggested_spread":None})
    elif decision.suggested_spread not in SPREADS: decision=decision.model_copy(update={"suggested_spread":None,"reading_recommended":False})
-   current=ConversationState(conversation.state); next_state=decision.next_state if decision.next_state in ALLOWED_TRANSITIONS[current] else current
+   next_state=current if can_confirm_reading else (decision.next_state if decision.next_state in ALLOWED_TRANSITIONS[current] else current)
    if next_state != decision.next_state: decision=decision.model_copy(update={"next_state":next_state})
-   conversation.state=next_state.value;conversation.last_intent=decision.intent.value;conversation.reading_recommended=decision.reading_recommended;conversation.suggested_spread=decision.suggested_spread
-   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply))
+   conversation.state=next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value
+   if not can_confirm_reading: conversation.reading_recommended=decision.reading_recommended;conversation.suggested_spread=decision.suggested_spread
+   if not can_confirm_reading: session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply))
    self._audit(session,user.id,conversation.id,response,True,None,{"history":len(history)}); session.commit(); return decision,response
   except Exception as error:
    audit_response=getattr(error,"response",None)

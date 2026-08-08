@@ -33,4 +33,7 @@ def test_database_at_revision_04_upgrades_to_head():
     assert "tarot_readings" in tables_in(database_path)
     assert "tarot_interpretations" in tables_in(database_path)
     command.upgrade(config, "head")
-    assert {"last_intent", "reading_recommended", "suggested_spread"}.issubset({row[1] for row in sqlite3.connect(database_path).execute("pragma table_info(conversations)")})
+    connection = sqlite3.connect(database_path)
+    assert {"last_intent", "reading_recommended", "suggested_spread", "last_action"}.issubset({row[1] for row in connection.execute("pragma table_info(conversations)")})
+    assert "trigger_message_id" in {row[1] for row in connection.execute("pragma table_info(tarot_readings)")}
+    assert any(row[1] == "uq_tarot_readings_trigger_message_id" and row[2] for row in connection.execute("pragma index_list(tarot_readings)"))

@@ -18,18 +18,31 @@ class LabService:
   c=s.scalar(select(Conversation).where(Conversation.user_id==u.id,Conversation.is_active.is_(True)).order_by(Conversation.id.desc()))
   if not c:c=Conversation(user_id=u.id);s.add(c);s.flush()
   s.commit();return u,c
- def chat(self,s,key,message):
-  u,c=self.user(s,key);d,r=ConversationService(self.provider,store_debug=self.store_debug).chat(s,u,c,message);return u,c,d,r
- def reading(self,s,key,spread=None,question=None):
+ def chat(self,s,key,message,message_id=None):
+  u,c=self.user(s,key)
+  if message_id:
+   existing=s.scalar(select(TarotReading).where(TarotReading.trigger_message_id==message_id))
+   if existing:
+    interpretation=s.scalar(select(TarotInterpretation).where(TarotInterpretation.reading_id==existing.id))
+    from app.conversation.schemas import ConversationAction, ConversationDecision, ConversationState, Intent
+    return u,c,ConversationDecision(reply=interpretation.interpretation_text if interpretation else "La lectura ya fue registrada.",intent=Intent(c.last_intent or "unclear"),next_state=ConversationState(c.state),action=ConversationAction.confirm_reading),None,existing,interpretation
+  d,r=ConversationService(self.provider,store_debug=self.store_debug).chat(s,u,c,message,message_id=message_id)
+  reading=interpretation=None
+  if d.action.value=="confirm_reading":
+   reading,interpretation,c=self.reading(s,key,trigger_message_id=message_id)
+   if interpretation:
+    s.add(Message(conversation_id=c.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=interpretation.interpretation_text));s.commit()
+  return u,c,d,r,reading,interpretation
+ def reading(self,s,key,spread=None,question=None,trigger_message_id=None):
   u,c=self.user(s,key)
   if spread is None:
    if not c.reading_recommended or c.suggested_spread not in SPREADS: raise ValueError("No valid reading suggestion is available")
    spread=c.suggested_spread
   if spread not in SPREADS: raise ValueError("Invalid spread")
   if c.state!="READY_FOR_READING": raise ValueError("Conversation is not ready for a reading")
-  rid,_=create_reading(s,user_id=u.id,conversation_id=c.id,spread_type=spread,question=question)
+  rid,_=create_reading(s,user_id=u.id,conversation_id=c.id,spread_type=spread,question=question,trigger_message_id=trigger_message_id)
   result=TarotInterpretationService(self.provider,store_debug=self.store_debug).interpret_reading(s,rid,u.id,c.id)
-  if result:c.state="READING_ACTIVE";s.commit()
+  if result:c.state="READING_ACTIVE";c.reading_recommended=False;c.suggested_spread=None;s.commit()
   return s.get(TarotReading,rid),result,c
  def refresh_memory(self,s,key):
   u=s.scalar(select(User).where(User.whatsapp_jid==f"lab:{key}"))

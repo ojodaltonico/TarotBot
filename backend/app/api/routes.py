@@ -80,8 +80,9 @@ def tarot_test_draw(request: TestDrawRequest) -> TestDrawResponse:
 def lab_chat(body:LabChatRequest,request:Request):
  s=get_session(request)
  try:
-  u,c,d,r=lab_service().chat(s,body.user_key,body.message)
-  return {"reply":d.reply,"state":c.state,"intent":d.intent.value,"reading_recommended":d.reading_recommended,"suggested_spread":d.suggested_spread,"usage":None if r is None else {"provider":r.provider,"model":r.model,"input_tokens":r.input_tokens,"output_tokens":r.output_tokens,"estimated_cost_usd":None}}
+  u,c,d,r,reading,interpretation=lab_service().chat(s,body.user_key,body.message,body.message_id)
+  auto_reading=None if reading is None else {"reading_id":reading.id,"spread":reading.spread_type,"cards":[{"position":x.position_label,"name":__import__('json').loads(x.card_snapshot)["name_es"],"orientation":x.orientation} for x in s.scalars(select(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard).where(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.reading_id==reading.id).order_by(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.position_index)).all()],"interpretation":interpretation.interpretation_text if interpretation else None,"summary":interpretation.interpretation_summary if interpretation else None,"state":c.state,"interpretation_error":None}
+  return {"reply":interpretation.interpretation_text if interpretation else d.reply,"state":c.state,"intent":d.intent.value,"reading_recommended":c.reading_recommended,"suggested_spread":c.suggested_spread,"usage":None if r is None else {"provider":r.provider,"model":r.model,"input_tokens":r.input_tokens,"output_tokens":r.output_tokens,"estimated_cost_usd":None},"reading":auto_reading}
  finally:s.close()
 @router.get("/internal/lab/users/{user_key}",response_model=LabUserStateResponse)
 def lab_status(user_key:str,request:Request):
@@ -98,7 +99,9 @@ def lab_reading(user_key:str,body:LabReadingRequest,request:Request):
  try:
   reading,interpretation,c=lab_service().reading(s,user_key,body.spread_type,body.question)
   cards=s.scalars(select(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard).where(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.reading_id==reading.id).order_by(__import__('app.models.tarot_reading',fromlist=['TarotReadingCard']).TarotReadingCard.position_index)).all()
-  return {"reading_id":reading.id,"spread":reading.spread_type,"cards":[{"position":x.position_label,"name":__import__('json').loads(x.card_snapshot)["name_es"],"orientation":x.orientation} for x in cards],"interpretation":interpretation.interpretation_text if interpretation else None,"summary":interpretation.interpretation_summary if interpretation else None,"state":c.state}
+  failed=s.scalar(select(__import__('app.models.ai',fromlist=['AICall']).AICall).where(__import__('app.models.ai',fromlist=['AICall']).AICall.reading_id==reading.id,__import__('app.models.ai',fromlist=['AICall']).AICall.success.is_(False)).order_by(__import__('app.models.ai',fromlist=['AICall']).AICall.id.desc()))
+  diagnostic=None if interpretation or not failed else {"category":failed.error_type or "provider_error","provider":failed.provider,"model":failed.model,"http_status":None,"google_status":None,"request_id":None}
+  return {"reading_id":reading.id,"spread":reading.spread_type,"cards":[{"position":x.position_label,"name":__import__('json').loads(x.card_snapshot)["name_es"],"orientation":x.orientation} for x in cards],"interpretation":interpretation.interpretation_text if interpretation else None,"summary":interpretation.interpretation_summary if interpretation else None,"state":c.state,"interpretation_error":diagnostic}
  except ValueError as e:raise HTTPException(status_code=422,detail=str(e))
  finally:s.close()
 @router.post("/internal/lab/users/{user_key}/memory/refresh",response_model=LabMemoryRefreshResponse)

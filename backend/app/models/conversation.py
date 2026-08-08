@@ -17,6 +17,7 @@ class Conversation(Base):
     last_intent: Mapped[str | None] = mapped_column(nullable=True)
     reading_recommended: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     suggested_spread: Mapped[str | None] = mapped_column(nullable=True)
+    last_action: Mapped[str | None] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, nullable=False)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utc_now, onupdate=utc_now, nullable=False)
     user: Mapped["User"] = relationship(back_populates="conversations")

@@ -8,6 +8,8 @@ class ConversationState(str, Enum):
 class Intent(str, Enum):
     greeting="greeting"; general_chat="general_chat"; ask_tarot="ask_tarot"; relationship="relationship"; work="work"; money="money"; decision="decision"; general_reading="general_reading"; follow_up="follow_up"; unclear="unclear"
 
+class ConversationAction(str, Enum):
+    none="none"; confirm_reading="confirm_reading"
 
 class ConversationDecision(BaseModel):
     reply: str = Field(min_length=1)
@@ -15,4 +17,5 @@ class ConversationDecision(BaseModel):
     next_state: ConversationState = ConversationState.CHATTING
     reading_recommended: bool = False
     suggested_spread: str | None = None
+    action: ConversationAction = ConversationAction.none
     memory_candidates: list[str] = []

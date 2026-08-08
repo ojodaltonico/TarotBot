@@ -6,6 +6,7 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.user import User
 from app.services.lab import LabService
+from app.schemas.lab import LabReadingResponse
 
 def make(session,key):
  u=User(whatsapp_jid=f"lab:{key}");session.add(u);session.flush();c=Conversation(user_id=u.id);session.add(c);session.flush();session.add(Message(conversation_id=c.id,direction="incoming",message_type="text",content="contexto"));session.commit();return u,c
@@ -37,3 +38,6 @@ def test_refresh_new_memory_and_endpoint_missing(client):
  with client.app.state.SessionLocal() as s:
   u,c=make(s,'new');out=LabService(FakeAIProvider(response='primera')).refresh_memory(s,'new');assert out['updated'] and out['version']==1
  assert client.post('/internal/lab/users/notfound/memory/refresh').status_code==404
+def test_reading_failure_diagnostic_contract_is_sanitized():
+ result=LabReadingResponse(reading_id=1,spread='one_card',cards=[],interpretation=None,summary=None,state='READY_FOR_READING',interpretation_error={'category':'provider_error','provider':'gemini','model':'gemini-3.6-flash'})
+ assert result.interpretation_error.category=='provider_error' and result.interpretation_error.request_id is None
