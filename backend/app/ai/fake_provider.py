@@ -39,13 +39,22 @@ class FakeAIProvider(AIProvider):
             general=text.strip() == "general" or any(phrase in text for phrase in ("tirada general", "mi tarot", "mi semana", "esta semana", "en general"))
             work=any(word in text for word in ("trabajo", "laboral"))
             third_party="compañera" in text and "jefe" in text
+            broad_love=text.strip() in {"amor", "quiero saber sobre el amor", "mi vida amorosa"}
+            broad_work=text.strip() == "trabajo"
+            interested="alguien que me interesa" in text
+            specific_relationship="mi ex" in text and any(word in text for word in ("siente", "intención", "intencion", "escribió", "escribio"))
+            specific_work=any(phrase in text for phrase in ("voy a conseguir trabajo", "si conseguire trabajo", "cómo está mi trabajo", "como esta mi trabajo"))
             affirmative=text.strip() in {"si", "sí", "dale", "ok", "okay", "de acuerdo"}
             if lottery: value={"reply":"No puedo decirte un número ganador. Si querés, podemos hablar de qué te preocupa de esa apuesta.","intent":"general_chat","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"action":"none","memory_candidates":[]}
             elif affirmative and state == "READY_FOR_READING": value={"reply":"Voy con la tirada.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","action":"confirm_reading","memory_candidates":[]}
             elif affirmative: value={"reply":"Todavía no hay una tirada preparada. Si querés, contame qué te gustaría mirar.","intent":"unclear","next_state":state,"reading_recommended":False,"suggested_spread":None,"action":"none","memory_candidates":[]}
             elif "hola" in text: value={"reply":"Hola, contame qué querés mirar.","intent":"greeting","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
+            elif broad_love: value={"reply":"¿Querés que lo miremos en general o hay alguien o una situación puntual que quieras consultar?","intent":"relationship","next_state":"DEFINING_QUESTION","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
+            elif broad_work: value={"reply":"¿Querés mirar el panorama laboral en general o hay algo puntual que te preocupe?","intent":"work","next_state":"DEFINING_QUESTION","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
+            elif interested: value={"reply":"¿Querés mirar qué está pasando entre ustedes o hacia dónde puede ir?","intent":"relationship","next_state":"DEFINING_QUESTION","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             elif third_party: value={"reply":"Podemos mirar la dinámica entre esas personas con una tirada.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","memory_candidates":[]}
-            elif general or work: value={"reply":"Podemos hacer una tirada de tres cartas para mirar eso.","intent":"general_reading" if general else "work","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"general_three","memory_candidates":[]}
+            elif general or specific_work or (work and not broad_work): value={"reply":"Podemos hacer una tirada de tres cartas para mirar eso.","intent":"general_reading" if general else "work","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"general_three","memory_candidates":[]}
+            elif specific_relationship: value={"reply":"Podemos mirar esa situación con una tirada.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","memory_candidates":[]}
             elif state in {"READING_ACTIVE", "FOLLOW_UP"} and relationship: value={"reply":"Podemos abrir una consulta nueva. Contame un poco más de qué querés mirar ahora.","intent":"relationship","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             elif state in {"READING_ACTIVE", "FOLLOW_UP"}: value={"reply":"Tomando la tirada que salió, para vos esto marca un momento de mirar con calma lo que necesitás.","intent":"follow_up","next_state":"FOLLOW_UP","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             elif relationship: value={"reply":"Contame un poco más del momento actual entre ustedes.","intent":"relationship","next_state":"DEFINING_QUESTION","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
