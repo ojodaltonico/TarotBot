@@ -36,7 +36,7 @@ class FakeAIProvider(AIProvider):
             state=(options or {}).get("conversation_state", "CHATTING")
             lottery=any(word in text for word in ("quiniela", "loteria", "lotería", "apuesta", "numero", "número"))
             relationship=any(word in text for word in ("ex", "relación", "persona", "nosotros", "vínculo", "vinculo"))
-            general=any(phrase in text for phrase in ("tirada general", "mi tarot", "mi semana", "esta semana", "en general"))
+            general=text.strip() == "general" or any(phrase in text for phrase in ("tirada general", "mi tarot", "mi semana", "esta semana", "en general"))
             work=any(word in text for word in ("trabajo", "laboral"))
             third_party="compañera" in text and "jefe" in text
             affirmative=text.strip() in {"si", "sí", "dale", "ok", "okay", "de acuerdo"}
@@ -44,10 +44,10 @@ class FakeAIProvider(AIProvider):
             elif affirmative and state == "READY_FOR_READING": value={"reply":"Voy con la tirada.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","action":"confirm_reading","memory_candidates":[]}
             elif affirmative: value={"reply":"Todavía no hay una tirada preparada. Si querés, contame qué te gustaría mirar.","intent":"unclear","next_state":state,"reading_recommended":False,"suggested_spread":None,"action":"none","memory_candidates":[]}
             elif "hola" in text: value={"reply":"Hola, contame qué querés mirar.","intent":"greeting","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
-            elif state in {"READING_ACTIVE", "FOLLOW_UP"} and relationship: value={"reply":"Podemos abrir una consulta nueva. Contame un poco más de qué querés mirar ahora.","intent":"relationship","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
-            elif state in {"READING_ACTIVE", "FOLLOW_UP"}: value={"reply":"Tomando la tirada que salió, para vos esto marca un momento de mirar con calma lo que necesitás.","intent":"follow_up","next_state":"FOLLOW_UP","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             elif third_party: value={"reply":"Podemos mirar la dinámica entre esas personas con una tirada.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","memory_candidates":[]}
             elif general or work: value={"reply":"Podemos hacer una tirada de tres cartas para mirar eso.","intent":"general_reading" if general else "work","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"general_three","memory_candidates":[]}
+            elif state in {"READING_ACTIVE", "FOLLOW_UP"} and relationship: value={"reply":"Podemos abrir una consulta nueva. Contame un poco más de qué querés mirar ahora.","intent":"relationship","next_state":"CHATTING","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
+            elif state in {"READING_ACTIVE", "FOLLOW_UP"}: value={"reply":"Tomando la tirada que salió, para vos esto marca un momento de mirar con calma lo que necesitás.","intent":"follow_up","next_state":"FOLLOW_UP","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             elif relationship: value={"reply":"Contame un poco más del momento actual entre ustedes.","intent":"relationship","next_state":"DEFINING_QUESTION","reading_recommended":False,"suggested_spread":None,"memory_candidates":[]}
             else: value={"reply":"Con ese contexto, podemos hacer una tirada para mirar el vínculo.","intent":"relationship","next_state":"READY_FOR_READING","reading_recommended":True,"suggested_spread":"relationship_three","memory_candidates":[]}
             return self._response(json.dumps(value))
