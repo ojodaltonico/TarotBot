@@ -20,9 +20,17 @@ El gateway Node recibe mensajes privados, los normaliza y los envía a `POST /in
 
 1. Copiá `.env.example` a `.env` si querés cambiar la configuración local. No agregues secretos al repositorio.
 2. Ejecutá `install.bat`.
-3. Ejecutá `run.bat` para abrir el backend y el gateway, o `start_backend.bat` / `start_gateway.bat` por separado.
+3. Ejecutá `run.bat`: espera `/health`, abre backend y gateway en terminales separadas y luego abre el dashboard privado. También podés ejecutar `start_backend.bat` o `start_gateway.bat` por separado para diagnóstico.
 
 El backend queda disponible en `http://127.0.0.1:5001`; su estado se consulta en `GET /health`.
+
+### Arranque normal en Windows
+
+1. Configurá `.env` localmente.
+2. Hacé doble clic en `run.bat`.
+3. El script espera que FastAPI responda `/health`, deja backend y gateway visibles en terminales separadas y abre automáticamente `/admin` si está habilitado.
+
+`run.bat` reutiliza un backend saludable y detecta un gateway Node ya activo para evitar duplicar la sesión Baileys. Si necesitás diagnosticar un componente, mantenés disponibles `start_backend.bat` y `start_gateway.bat` por separado.
 
 ## Vincular WhatsApp
 
@@ -93,6 +101,6 @@ Las rutas `/internal/lab/...` son sólo para desarrollo local: chat, estado de u
 
 ## Dashboard privado V1
 
-El panel de observación vive dentro del backend: iniciá `start_backend.bat` y abrí [http://127.0.0.1:5001/admin](http://127.0.0.1:5001/admin). Configurá sólo en `.env` `ADMIN_ENABLED=true`, `ADMIN_USERNAME` y `ADMIN_PASSWORD`; el acceso usa autenticación HTTP Basic y nunca guarda la contraseña en SQLite. Sin credenciales válidas, o con `ADMIN_ENABLED=false`, el panel no es utilizable.
+El panel de observación vive dentro del backend: iniciá `start_backend.bat` y abrí [http://127.0.0.1:5001/admin](http://127.0.0.1:5001/admin). Está pensado exclusivamente para uso local y abre directamente, sin usuario ni contraseña. Podés ocultarlo con `ADMIN_ENABLED=false`.
 
-El dashboard es exclusivamente de lectura: permite revisar actividad, conversaciones anonimizadas, timeline, memoria, tiradas, imágenes `table_v2`, llamadas IA y errores. No permite responder, editar prompts, cambiar usuarios ni borrar información. Las páginas usan `no-store` y `noindex`; las imágenes se sirven por una ruta autenticada y se regeneran con el renderer sólo si falta su cache.
+El dashboard es exclusivamente de lectura: permite revisar actividad, conversaciones anonimizadas, timeline, memoria, tiradas, imágenes `table_v2`, llamadas IA y errores. No permite responder, editar prompts, cambiar usuarios ni borrar información. Las páginas usan `no-store` y `noindex`; las imágenes se sirven sólo desde el backend local y se regeneran con el renderer si falta su cache.

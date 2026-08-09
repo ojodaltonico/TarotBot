@@ -16,6 +16,11 @@ from app.services.response_segments import segment_text
 PROMPT_DIR = Path(__file__).parents[1] / "ai" / "prompts"
 PROMPT_VERSION = "tarot_interpretation_v2"
 PROMPT = PROMPT_DIR / f"{PROMPT_VERSION}.txt"
+SPREAD_CONTEXT = {
+    "general_three": "La lectura es general_three: usá sólo Situación actual, Influencia o desafío y Tendencia o consejo; no la conviertas en una lectura relacional.",
+    "relationship_three": "La lectura es relationship_three: podés usar Tu posición, La otra parte y Energía o tendencia del vínculo.",
+    "one_card": "La lectura es one_card: interpretá una sola carta como mensaje, energía o consejo puntual.",
+}
 
 
 class InterpretationOutput(BaseModel):
@@ -80,7 +85,7 @@ class TarotInterpretationService:
                 for card in cards
             ],
         }
-        messages = [AIMessage("system", self.prompt.read_text(encoding="utf8"))]
+        messages = [AIMessage("system", f"{self.prompt.read_text(encoding='utf8')}\n\n{SPREAD_CONTEXT[reading.spread_type]}")]
         if memory:
             messages.append(AIMessage("system", f"Memoria: {memory.summary}"))
         messages += [AIMessage("user" if message.direction == "incoming" else "assistant", message.content) for message in history]

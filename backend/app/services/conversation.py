@@ -19,19 +19,37 @@ PROMPT=PROMPT_DIR/f"{PROMPT_VERSION}.txt"
 ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION,ConversationState.READY_FOR_READING},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
 SIMPLIFICATION_FOLLOW_UPS={"o sea","entonces","en resumen","que significa","pero si o no","y eso que quiere decir"}
-
-
-CONFIRMATION_NOT_READY="Todavía no hay una tirada lista. Si querés, contame qué te gustaría mirar."
-
+READING_CONFIRMATIONS={"si","dale","perfecto","de una","bueno","hagamosla","eso","si eso","me parece bien"}
+READING_REJECTIONS={"no","mejor despues","todavia no","antes quiero preguntarte algo"}
 
 class EmptyResponseError(ValueError): pass
 class InvalidResponseError(ValueError): pass
 
 
 def is_simplification_follow_up(text: str) -> bool:
+ return _normalize_turn(text) in SIMPLIFICATION_FOLLOW_UPS
+
+
+def _normalize_turn(text: str) -> str:
  normalized=unicodedata.normalize("NFKD",text).encode("ascii","ignore").decode().lower()
- normalized=re.sub(r"[^a-z0-9]+"," ",normalized).strip()
- return normalized in SIMPLIFICATION_FOLLOW_UPS
+ return re.sub(r"[^a-z0-9]+"," ",normalized).strip()
+
+
+def is_reading_confirmation(text: str) -> bool:
+ normalized=_normalize_turn(text)
+ return normalized in READING_CONFIRMATIONS or bool(re.fullmatch(r"si+",normalized))
+
+
+def is_reading_rejection(text: str) -> bool:
+ return _normalize_turn(text) in READING_REJECTIONS
+
+
+def confirmation_not_ready_reply(current: ConversationState) -> str:
+ if current is ConversationState.DEFINING_QUESTION:
+  return "Decime un poco más qué querés mirar y la enfocamos ahí."
+ if current is ConversationState.READY_FOR_READING:
+  return "Esa propuesta ya no está disponible. Podemos hacer una general, o enfocarla en trabajo, amor u otro tema."
+ return "Podemos hacer una tirada. Decime si la querés general, sobre trabajo, amor u otro tema."
 
 class ConversationService:
  """Persist a safe fallback for any unusable AI decision; valid decisions alone may change state."""
@@ -60,8 +78,13 @@ class ConversationService:
    if not response.text or not response.text.strip(): raise EmptyResponseError()
    decision=ConversationDecision.model_validate_json(response.text)
    if not decision.reply.strip(): raise InvalidResponseError()
+   proposal_is_ready=(current is ConversationState.READY_FOR_READING and conversation.reading_recommended and conversation.suggested_spread in SPREADS)
+   if proposal_is_ready and is_reading_confirmation(text) and decision.action is not ConversationAction.confirm_reading:
+    decision=decision.model_copy(update={"action":ConversationAction.confirm_reading,"next_state":ConversationState.READY_FOR_READING,"reading_recommended":True,"suggested_spread":conversation.suggested_spread})
+   if proposal_is_ready and decision.action is ConversationAction.none and not decision.reading_recommended and not is_reading_rejection(text) and decision.next_state is ConversationState.READY_FOR_READING:
+    decision=decision.model_copy(update={"reading_recommended":True,"suggested_spread":conversation.suggested_spread})
    can_confirm_reading=(current is ConversationState.READY_FOR_READING and conversation.reading_recommended and conversation.suggested_spread in SPREADS and decision.action is ConversationAction.confirm_reading)
-   if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none,"reply":CONFIRMATION_NOT_READY,"next_state":current,"reading_recommended":False,"suggested_spread":None})
+   if decision.action is ConversationAction.confirm_reading and not can_confirm_reading: decision=decision.model_copy(update={"action":ConversationAction.none,"reply":confirmation_not_ready_reply(current),"next_state":current,"reading_recommended":False,"suggested_spread":None})
    if not decision.reading_recommended: decision=decision.model_copy(update={"suggested_spread":None})
    elif decision.suggested_spread not in SPREADS: decision=decision.model_copy(update={"suggested_spread":None,"reading_recommended":False})
    else: decision=decision.model_copy(update={"next_state":ConversationState.READY_FOR_READING})
