@@ -123,7 +123,7 @@ def process_inbound_message(session: Session, inbound: InboundWhatsAppMessage, p
             message_id=trigger_message_id,
             created_at=new_messages[-1].timestamp,
             physical_messages=[
-                {"message_id": item.message_id, "timestamp": item.timestamp, "message_type": item.message_type, "text": item.text}
+                {"message_id": item.message_id, "timestamp": item.timestamp, "message_type": item.message_type, "text": item.text, "quoted_text": item.quoted_text, "quoted_message_id": item.quoted_message_id}
                 for item in new_messages
             ],
         )

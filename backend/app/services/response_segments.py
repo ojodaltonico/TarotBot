@@ -56,7 +56,10 @@ def typing_ms(text: str, *, key: str, index: int) -> int:
     chars_per_second = max(1.0, settings.whatsapp_typing_chars_per_second)
     minimum = max(0, settings.whatsapp_min_typing_ms)
     maximum = max(minimum, settings.whatsapp_max_typing_ms)
-    natural = (len(text.strip()) / chars_per_second) * 1000
+    length = len(text.strip())
+    natural = (length / chars_per_second) * 1000
+    if length > 280:
+        natural *= 1.12
     varied = natural * _variation(f"typing|{key}|{index}|{text}", 0.9, 1.1)
     return min(maximum, max(minimum, round(varied)))
 

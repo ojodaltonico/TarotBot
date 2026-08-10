@@ -27,9 +27,9 @@ class Settings(BaseSettings):
     ai_recent_messages: int = 12
     ai_memory_update_interval: int = 8
     ai_store_debug_payloads: bool = False
-    whatsapp_typing_chars_per_second: float = 22.0
+    whatsapp_typing_chars_per_second: float = 20.0
     whatsapp_min_typing_ms: int = 1800
-    whatsapp_max_typing_ms: int = 18000
+    whatsapp_max_typing_ms: int = 22000
     whatsapp_inter_message_delay_ms_min: int = 600
     whatsapp_inter_message_delay_ms_max: int = 1800
     admin_enabled: bool = True

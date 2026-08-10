@@ -3,6 +3,7 @@ from sqlalchemy import select
 from app.ai.provider import AIMessage, AIProvider, AIProviderError
 from app.ai.costs import estimate_cost
 from app.models.message import Message
+from app.models.tarot_reading import TarotInterpretation, TarotReading
 from app.repositories.ai_repository import add_call, get_memory, upsert_memory
 
 PROMPT_VERSION="memory_v1"
@@ -17,6 +18,11 @@ class MemoryService:
   messages=list(reversed(session.scalars(select(Message).where(Message.conversation_id==conversation_id).order_by(Message.id.desc()).limit(self.interval)).all()))
   if not force and len(messages)<self.interval: return get_memory(session,user_id)
   context="\n".join(f"{m.direction}: {m.content}" for m in messages)
+  latest_reading=session.scalar(select(TarotReading).where(TarotReading.user_id==user_id, TarotReading.conversation_id==conversation_id).order_by(TarotReading.id.desc()))
+  if latest_reading:
+   interpretation=session.scalar(select(TarotInterpretation).where(TarotInterpretation.reading_id==latest_reading.id).order_by(TarotInterpretation.id.desc()))
+   if interpretation:
+    context += f"\nlectura_persistida: id={latest_reading.id}; spread={latest_reading.spread_type}; resumen={interpretation.interpretation_summary}"
   try:
    response=self.provider.generate([AIMessage("system",PROMPT.read_text(encoding="utf8")),AIMessage("user",context)],purpose="memory_summary",options={})
    if not response.text or not response.text.strip(): raise ValueError("empty_memory_summary")

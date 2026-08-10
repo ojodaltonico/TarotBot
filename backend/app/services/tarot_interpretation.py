@@ -11,6 +11,7 @@ from app.models.ai import AICall, UserMemory
 from app.models.message import Message
 from app.models.tarot_reading import TarotInterpretation, TarotReading, TarotReadingCard
 from app.services.response_segments import segment_text
+from app.services.conversation import is_health_request
 
 
 PROMPT_DIR = Path(__file__).parents[1] / "ai" / "prompts"
@@ -86,6 +87,8 @@ class TarotInterpretationService:
             ],
         }
         messages = [AIMessage("system", f"{self.prompt.read_text(encoding='utf8')}\n\n{SPREAD_CONTEXT[reading.spread_type]}")]
+        if any(is_health_request(message.content) for message in history):
+            messages.append(AIMessage("system", "El contexto incluye una consulta de salud. Esta lectura sólo puede ser una reflexión emocional no médica: no diagnostiques, pronostiques, sugieras tratamientos ni inventes medicación o síntomas."))
         if memory:
             messages.append(AIMessage("system", f"Memoria: {memory.summary}"))
         messages += [AIMessage("user" if message.direction == "incoming" else "assistant", message.content) for message in history]

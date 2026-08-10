@@ -60,6 +60,16 @@ export function extractInboundMessage(message) {
 
   if (!messageType) return null
 
+  const contextInfo = content.extendedTextMessage?.contextInfo || content.imageMessage?.contextInfo
+  const quotedContent = contextInfo?.quotedMessage || {}
+  const quotedText = typeof quotedContent.conversation === "string"
+    ? quotedContent.conversation
+    : typeof quotedContent.extendedTextMessage?.text === "string"
+      ? quotedContent.extendedTextMessage.text
+      : typeof quotedContent.imageMessage?.caption === "string"
+        ? quotedContent.imageMessage.caption
+        : null
+
   const unixTimestamp = Number(message.messageTimestamp) || Math.floor(Date.now() / 1000)
   return {
     sender: message.key.remoteJid,
@@ -67,6 +77,8 @@ export function extractInboundMessage(message) {
     timestamp: new Date(unixTimestamp * 1000).toISOString(),
     message_type: messageType,
     text,
+    quoted_text: quotedText,
+    quoted_message_id: contextInfo?.stanzaId || null,
   }
 }
 
@@ -211,7 +223,7 @@ export function createBatchProcessor(sock, request = axios.post) {
       timestamp: first.timestamp,
       message_type: first.message_type,
       text: first.text,
-      messages: messages.map(({ message_id, timestamp, message_type, text }) => ({ message_id, timestamp, message_type, text })),
+      messages: messages.map(({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id }) => ({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id })),
     }
     const response = await request(INBOUND_URL, payload, { timeout: BACKEND_REQUEST_TIMEOUT_MS })
     await dispatchBackendResponse(sock, sender, response.data)

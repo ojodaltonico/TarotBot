@@ -9,6 +9,8 @@ class InboundWhatsAppPhysicalMessage(BaseModel):
     timestamp: datetime
     message_type: Literal["text", "image"]
     text: str = Field(default="", max_length=10_000)
+    quoted_text: str | None = Field(default=None, max_length=10_000)
+    quoted_message_id: str | None = Field(default=None, max_length=255)
 
 
 class InboundWhatsAppMessage(InboundWhatsAppPhysicalMessage):

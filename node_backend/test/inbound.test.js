@@ -51,6 +51,17 @@ test("extrae texto y metadatos de un mensaje privado", () => {
   assert.equal(payload.text, "Hola")
 })
 
+test("extrae el texto citado sin incorporar metadatos técnicos al texto actual", () => {
+  const payload = extractInboundMessage({
+    key: { remoteJid: "5491100000000@s.whatsapp.net", id: "QUOTE" },
+    messageTimestamp: 1_700_000_000,
+    message: { extendedTextMessage: { text: "Esto", contextInfo: { stanzaId: "ORIGINAL", quotedMessage: { conversation: "Mis hijos" } } } },
+  })
+  assert.equal(payload.text, "Esto")
+  assert.equal(payload.quoted_text, "Mis hijos")
+  assert.equal(payload.quoted_message_id, "ORIGINAL")
+})
+
 test("envía textos del backend en orden e ignora tipos futuros", async () => {
   const sent = []
   const sock = {
