@@ -4,7 +4,7 @@ from app.models.conversation import Conversation
 from app.models.message import Message
 from app.models.tarot_reading import TarotInterpretation, TarotReading, TarotReadingCard
 from app.models.user import User, utc_now
-from app.services.conversation import ConversationService
+from app.services.conversation import ConversationService, pending_health_question
 from app.services.memory import MemoryService
 from app.services.tarot_interpretation import TarotInterpretationService
 from app.services.tarot_readings import create_reading
@@ -40,6 +40,9 @@ class LabService:
    spread=c.suggested_spread
   if spread not in SPREADS: raise ValueError("Invalid spread")
   if c.state!="READY_FOR_READING": raise ValueError("Conversation is not ready for a reading")
+  if question is None:
+   history=s.scalars(select(Message).where(Message.conversation_id==c.id).order_by(Message.id)).all()
+   question=pending_health_question(c,history)
   rid,_=create_reading(s,user_id=u.id,conversation_id=c.id,spread_type=spread,question=question,trigger_message_id=trigger_message_id)
   result=TarotInterpretationService(self.provider,store_debug=self.store_debug).interpret_reading(s,rid,u.id,c.id)
   if result:c.state="READING_ACTIVE";c.reading_recommended=False;c.suggested_spread=None;c.last_action="none";s.commit()

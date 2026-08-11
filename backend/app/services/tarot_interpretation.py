@@ -87,7 +87,7 @@ class TarotInterpretationService:
             ],
         }
         messages = [AIMessage("system", f"{self.prompt.read_text(encoding='utf8')}\n\n{SPREAD_CONTEXT[reading.spread_type]}")]
-        if any(is_health_request(message.content) for message in history):
+        if (reading.question or "").startswith("Reflexión emocional no médica") or any(is_health_request(message.content) for message in history):
             messages.append(AIMessage("system", "El contexto incluye una consulta de salud. Esta lectura sólo puede ser una reflexión emocional no médica: no diagnostiques, pronostiques, sugieras tratamientos ni inventes medicación o síntomas."))
         if memory:
             messages.append(AIMessage("system", f"Memoria: {memory.summary}"))

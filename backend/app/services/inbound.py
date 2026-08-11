@@ -12,12 +12,13 @@ from sqlalchemy.orm import Session
 from app.ai.provider import AIProvider
 from app.conversation.schemas import ConversationAction
 from app.models.tarot_reading import TarotReading
+from app.models.message import Message
 from app.models.user import utc_now
 from app.repositories.conversation_repository import get_or_create_active_conversation
 from app.repositories.message_repository import add_message, get_by_whatsapp_message_id
 from app.repositories.user_repository import get_or_create_user
 from app.schemas.whatsapp import InboundWhatsAppMessage, InboundWhatsAppResponse, OutboundMessage
-from app.services.conversation import ConversationService
+from app.services.conversation import ConversationService, pending_health_question
 from app.services.response_segments import delivery_messages, segment_text
 from app.services.tarot_interpretation import TarotInterpretationService
 from app.services.tarot_readings import create_reading
@@ -67,11 +68,13 @@ def _automatic_reading(session: Session, provider: AIProvider, user, conversatio
     if session.scalar(select(TarotReading).where(TarotReading.trigger_message_id == message_id)) is not None:
         return []
 
+    history = session.scalars(select(Message).where(Message.conversation_id == conversation.id).order_by(Message.id)).all()
     reading_id, _ = create_reading(
         session,
         user_id=user.id,
         conversation_id=conversation.id,
         spread_type=conversation.suggested_spread,
+        question=pending_health_question(conversation, history),
         trigger_message_id=message_id,
     )
     image = _render_image_message(session, reading_id)

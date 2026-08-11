@@ -78,9 +78,9 @@ def test_health_question_is_locally_limited_without_provider_or_reading(client):
         provider = FakeAIProvider(mode="demo")
         decision, response = ConversationService(provider).chat(session, user, conversation, "¿Me voy a curar de esta enfermedad?")
         assert response is None and provider.requests == []
-        assert decision.reading_recommended is False
-        assert "tratamiento" in decision.reply.lower()
-        assert session.get(Conversation, conversation.id).state == "CHATTING"
+        assert decision.reading_recommended and decision.suggested_spread == "one_card"
+        assert "controles" in decision.reply.lower()
+        assert session.get(Conversation, conversation.id).state == "READY_FOR_READING"
         assert session.scalar(select(func.count()).select_from(TarotReading)) == 0
 
 

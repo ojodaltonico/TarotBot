@@ -20,9 +20,12 @@ PROMPT=PROMPT_DIR/f"{PROMPT_VERSION}.txt"
 ALLOWED_TRANSITIONS={ConversationState.NEW:{ConversationState.CHATTING,ConversationState.DEFINING_QUESTION,ConversationState.READY_FOR_READING},ConversationState.CHATTING:set(ConversationState),ConversationState.DEFINING_QUESTION:{ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.READY_FOR_READING:{ConversationState.READING_ACTIVE,ConversationState.CHATTING},ConversationState.READING_ACTIVE:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.READY_FOR_READING},ConversationState.FOLLOW_UP:{ConversationState.FOLLOW_UP,ConversationState.CHATTING,ConversationState.DEFINING_QUESTION,ConversationState.READY_FOR_READING}}
 FALLBACK="Se me cortó un poco el hilo. Decime eso último de nuevo y seguimos."
 SIMPLIFICATION_FOLLOW_UPS={"o sea","entonces","en resumen","que significa","pero si o no","y eso que quiere decir"}
-READING_CONFIRMATIONS={"si","sip","sep","se","dale","bueno","ok","okay","perfecto","de una","claro","hagamos","hagamosla","eso","si eso","me parece","me parece bien"}
+READING_CONFIRMATIONS={"si","sip","sep","se","dale","dale si","bueno","ok","okay","perfecto","de una","claro","hagamos","hagamosla","eso","si eso","me parece","me parece bien"}
 READING_REJECTIONS={"no","mejor despues","todavia no","antes quiero preguntarte algo"}
-HEALTH_TERMS={"salud","enfermedad","enfermo","enferma","cura","curar","curacion","curacion","diagnostico","diagnostico","medicamento","medicacion","tratamiento","operacion","cirugia","sintoma","dolor","embarazo","embarazada","cancer","tumor","analisis","estudio medico","medico","doctora","doctor"}
+HEALTH_TERMS={"salud","enfermedad","enfermo","enferma","cura","curar","curacion","diagnostico","medicamento","medicacion","tratamiento","operacion","cirugia","sintoma","dolor","embarazo","embarazada","bebe","hijo por nacer","cancer","tumor","analisis","estudio medico","medico","doctora","doctor","internada","internado"}
+HEALTH_EXCLUSIONS={"que no sea salud","que no sean salud","no quiero preguntar por salud","dejemos el tema de salud","dejemos salud"}
+HEALTH_PREDICTIVE_TERMS={"me voy a curar","se va a curar","esta bien","esta bien","como va","como evoluciona","va a salir bien","resultado","diagnostico","tratamiento","medicamento","operacion","cirugia","cura","curar"}
+HEALTH_EMOTIONAL_TERMS={"atravesar mejor","cuidar emocionalmente","acompanarme","acompañarme","reflexion","reflexión","transitar","una carta para"}
 NEW_TOPIC_TERMS={"trabajo","laboral","empleo","plata","dinero","amor","pareja","relacion","relacion","ex","familia","estudio","mudanza"}
 READING_REQUEST_TERMS={"otra tirada","otra lectura","una tirada","una lectura","sacar cartas","saquemos cartas","quiero otra","nueva tirada","nueva lectura","otra carta"}
 INSISTENCE_TERMS={"insisto","igual quiero","quiero otra igual","hagamos otra","si quiero otra","quiero una nueva"}
@@ -53,9 +56,17 @@ def is_general_request(text: str) -> bool:
  return _normalize_turn(text) in {"general","tirada general","mi tarot"}
 
 
-def is_health_request(text: str) -> bool:
+def health_intent(text: str) -> str | None:
  normalized=_normalize_turn(text)
- return any(term in normalized for term in HEALTH_TERMS)
+ if any(term in normalized for term in HEALTH_EXCLUSIONS): return None
+ if not any(term in normalized for term in HEALTH_TERMS): return None
+ if any(term in normalized for term in HEALTH_EMOTIONAL_TERMS): return "health_emotional"
+ if any(term in normalized for term in HEALTH_PREDICTIVE_TERMS): return "health_predictive"
+ return "health_context_only"
+
+
+def is_health_request(text: str) -> bool:
+ return health_intent(text) in {"health_predictive","health_emotional"}
 
 
 def is_explicit_reflection_request(text: str) -> bool:
@@ -87,7 +98,37 @@ def active_reading_reply() -> str:
 
 
 def health_limit_reply() -> str:
- return "Con la salud no haría una tirada para decir si algo se cura, empeora o qué tratamiento necesitás. Para eso conviene hablarlo con un profesional. Si querés, puedo acompañarte con una carta como reflexión emocional, sin convertirla en una respuesta médica."
+ return "Sobre cómo evoluciona la salud o el embarazo no te lo marcaría con las cartas; eso es para verlo con tus controles. Pero podemos sacar una carta sobre cómo estás transitando este momento y qué necesitás cuidar emocionalmente. ¿Te parece?"
+
+
+def health_reflection_reply() -> str:
+ return "Podemos sacar una carta como reflexión emocional para acompañarte en esta etapa, sin usarla para responder algo médico. ¿Te parece?"
+
+
+def is_safe_health_pending(conversation, history: list[Message]) -> bool:
+ return conversation.reading_recommended and conversation.suggested_spread == "one_card" and any("emocional" in message.content.lower() for message in history if message.direction == "outgoing")
+
+
+def pending_health_question(conversation, history: list[Message]) -> str | None:
+ if is_safe_health_pending(conversation, history):
+  return "Reflexión emocional no médica para transitar un contexto de salud."
+ return None
+
+
+def separate_topics_reply(history: list[Message]) -> str:
+ joined=" ".join(message.content.lower() for message in history if message.direction == "incoming")
+ topics=[label for label, terms in (("familia",("familia",)),("viajes",("viaje","viajes")),("patrones",("patron","patrones","comportamiento"))) if any(term in joined for term in terms)]
+ options=", ".join(topics) if topics else "el tema que más te importe"
+ return f"Dale. ¿Con cuál arrancamos: {options}?"
+
+
+def is_separate_topics_request(text: str) -> bool:
+ return "por separado" in _normalize_turn(text)
+
+
+def is_retrospective_topic_mapping(text: str, reading: TarotReading) -> bool:
+ normalized=_normalize_turn(text)
+ return reading.spread_type == "general_three" and "carta" in normalized and any(topic in normalized for topic in {"viaje","viajes"}) and "viaje" not in _normalize_turn(reading.question or "")
 
 
 def confirmation_not_ready_reply(current: ConversationState) -> str:
@@ -123,14 +164,23 @@ class ConversationService:
   current=ConversationState(conversation.state)
   active_reading=session.scalar(select(TarotReading).where(TarotReading.conversation_id==conversation.id).order_by(TarotReading.id.desc()))
   has_active_reading=current in {ConversationState.READING_ACTIVE,ConversationState.FOLLOW_UP} and active_reading is not None
-  prior_health_context=any(is_health_request(message.content) for message in history)
-  if is_health_request(text):
-   next_state=ConversationState.CHATTING if current is ConversationState.READY_FOR_READING else current
-   decision=ConversationDecision(reply=health_limit_reply(),intent="general_chat",next_state=next_state,reading_recommended=False,suggested_spread=None)
-   conversation.state=next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value;conversation.reading_recommended=False;conversation.suggested_spread=None
+  current_health_intent=health_intent(text)
+  prior_health_context=any(health_intent(message.content) in {"health_predictive","health_emotional"} for message in history)
+  if current_health_intent in {"health_predictive","health_emotional"}:
+   reply=health_limit_reply() if current_health_intent == "health_predictive" else health_reflection_reply()
+   decision=ConversationDecision(reply=reply,intent="ask_tarot",next_state=ConversationState.READY_FOR_READING,reading_recommended=True,suggested_spread="one_card")
+   conversation.state=decision.next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value;conversation.reading_recommended=True;conversation.suggested_spread="one_card"
+   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply));session.commit();return decision,None
+  if is_separate_topics_request(text):
+   decision=ConversationDecision(reply=separate_topics_reply(history+current_messages),intent="general_chat",next_state=ConversationState.DEFINING_QUESTION,reading_recommended=False,suggested_spread=None)
+   conversation.state=decision.next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value;conversation.reading_recommended=False;conversation.suggested_spread=None
+   session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply));session.commit();return decision,None
+  if has_active_reading and is_retrospective_topic_mapping(text,active_reading):
+   decision=ConversationDecision(reply="Esa tirada no separó una posición para viajes: las cartas quedaron en situación actual, influencia o desafío y tendencia o consejo. Si querés mirar viajes en particular, conviene abrir una consulta aparte.",intent="follow_up",next_state=ConversationState.FOLLOW_UP,reading_recommended=False,suggested_spread=None)
+   conversation.state=decision.next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value;conversation.reading_recommended=False;conversation.suggested_spread=None
    session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply));session.commit();return decision,None
   if prior_health_context and is_explicit_reflection_request(text):
-   decision=ConversationDecision(reply="Podemos sacar una carta sólo como reflexión sobre cómo cuidarte emocionalmente mientras atravesás esto, sin usarla para responder algo médico. ¿Te parece?",intent="ask_tarot",next_state=ConversationState.READY_FOR_READING,reading_recommended=True,suggested_spread="one_card")
+   decision=ConversationDecision(reply=health_reflection_reply(),intent="ask_tarot",next_state=ConversationState.READY_FOR_READING,reading_recommended=True,suggested_spread="one_card")
    conversation.state=decision.next_state.value;conversation.last_intent=decision.intent.value;conversation.last_action=decision.action.value;conversation.reading_recommended=True;conversation.suggested_spread="one_card"
    session.add(Message(conversation_id=conversation.id,whatsapp_message_id=None,direction="outgoing",message_type="text",content=decision.reply));session.commit();return decision,None
   memory=session.scalar(select(UserMemory).where(UserMemory.user_id==user.id)); messages=[AIMessage("system",self.prompt.read_text(encoding="utf8"))]
