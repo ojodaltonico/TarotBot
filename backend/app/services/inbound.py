@@ -13,6 +13,7 @@ from app.ai.provider import AIProvider
 from app.conversation.schemas import ConversationAction
 from app.models.tarot_reading import TarotReading
 from app.models.message import Message
+from app.models.ai import AICall
 from app.models.user import utc_now
 from app.repositories.conversation_repository import get_or_create_active_conversation
 from app.repositories.message_repository import add_message, get_by_whatsapp_message_id
@@ -28,6 +29,7 @@ from app.tarot.spreads import SPREADS
 
 LOGGER = logging.getLogger(__name__)
 READING_FALLBACK = "Las cartas ya salieron, pero se me cortó la interpretación. Dame un momento y después retomamos esta lectura."
+AUDIO_FALLBACK = "No llegué a entender bien ese audio. ¿Me lo mandás de nuevo o me lo escribís?"
 
 
 def _safe_message_id(message_id: str) -> str:
@@ -104,19 +106,26 @@ def process_inbound_message(session: Session, inbound: InboundWhatsAppMessage, p
         if item.message_id in seen_ids or get_by_whatsapp_message_id(session, item.message_id):
             continue
         seen_ids.add(item.message_id)
-        if item.text.strip():
+        if item.text.strip() or item.message_type == "audio":
             new_messages.append(item)
     if not new_messages:
         duplicate = bool(physical) and all(get_by_whatsapp_message_id(session, item.message_id) for item in physical)
         LOGGER.info("whatsapp_inbound id=%s result=%s duplicate=%s", _safe_message_id(inbound.message_id), "duplicate" if duplicate else "ignored", str(duplicate).lower())
         return InboundWhatsAppResponse(messages=[], duplicate=duplicate)
 
-    logical_text = "\n".join(item.text.strip() for item in new_messages)
+    logical_text = "\n".join(item.text.strip() for item in new_messages if item.text.strip())
     trigger_message_id = new_messages[-1].message_id
     started = perf_counter()
     user = get_or_create_user(session, inbound.sender, inbound.timestamp)
     conversation = get_or_create_active_conversation(session, user.id)
     conversation.updated_at = utc_now()
+    if not logical_text:
+        for item in new_messages:
+            add_message(session, conversation_id=conversation.id, whatsapp_message_id=item.message_id, direction="incoming", message_type="audio", content="", audio_mimetype=item.audio_mimetype, audio_duration_seconds=item.audio_duration_seconds, audio_ptt=item.audio_ptt, transcription_error=item.transcription_error)
+            session.add(AICall(user_id=user.id, conversation_id=conversation.id, reading_id=None, purpose="audio_transcription", provider=item.transcription_provider or "unknown", model=item.transcription_model or "unknown", prompt_version="audio_transcription_v1", input_tokens=0, cached_input_tokens=None, output_tokens=0, latency_ms=item.transcription_latency_ms or 0, success=False, error_type=item.transcription_error or "empty_transcription", estimated_cost_usd=None, debug_payload=None))
+        _persist_outgoing(session, conversation.id, AUDIO_FALLBACK)
+        session.commit()
+        return InboundWhatsAppResponse(messages=delivery_messages([AUDIO_FALLBACK], key=f"audio:{trigger_message_id}"))
     try:
         decision, response = ConversationService(provider, store_debug=store_debug).chat(
             session,
@@ -126,7 +135,7 @@ def process_inbound_message(session: Session, inbound: InboundWhatsAppMessage, p
             message_id=trigger_message_id,
             created_at=new_messages[-1].timestamp,
             physical_messages=[
-                {"message_id": item.message_id, "timestamp": item.timestamp, "message_type": item.message_type, "text": item.text, "quoted_text": item.quoted_text, "quoted_message_id": item.quoted_message_id}
+                {"message_id": item.message_id, "timestamp": item.timestamp, "message_type": item.message_type, "text": item.text, "quoted_text": item.quoted_text, "quoted_message_id": item.quoted_message_id, "audio_mimetype": item.audio_mimetype, "audio_duration_seconds": item.audio_duration_seconds, "audio_ptt": item.audio_ptt, "transcription_provider": item.transcription_provider, "transcription_model": item.transcription_model, "transcription_latency_ms": item.transcription_latency_ms, "transcription_error": item.transcription_error}
                 for item in new_messages
             ],
         )

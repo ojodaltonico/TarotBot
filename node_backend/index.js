@@ -1,5 +1,6 @@
 import makeWASocket, {
   DisconnectReason,
+  downloadMediaMessage,
   fetchLatestBaileysVersion,
   useMultiFileAuthState,
 } from "@whiskeysockets/baileys"
@@ -15,6 +16,7 @@ dotenv.config({ path: resolve(process.cwd(), "..", ".env") })
 const AUTH_FOLDER = process.env.WHATSAPP_AUTH_FOLDER || "./whatsapp-sessions"
 const BACKEND_URL = process.env.WHATSAPP_BACKEND_URL || "http://127.0.0.1:5001"
 const INBOUND_URL = `${BACKEND_URL.replace(/\/$/, "")}/internal/whatsapp/inbound`
+const TRANSCRIBE_URL = `${BACKEND_URL.replace(/\/$/, "")}/internal/whatsapp/transcribe`
 const MAX_RECONNECT_DELAY_MS = 30_000
 
 export function getBackendRequestTimeoutMs(value = process.env.BACKEND_REQUEST_TIMEOUT_MS) {
@@ -29,6 +31,11 @@ export function isGatewayTimeout(error) {
 export function getCollectionTimeoutMs(value, fallback) {
   const timeout = Number(value)
   return Number.isFinite(timeout) && timeout >= 1_000 ? Math.floor(timeout) : fallback
+}
+
+export function getAudioLimit(value, fallback) {
+  const limit = Number(value)
+  return Number.isFinite(limit) && limit > 0 ? Math.floor(limit) : fallback
 }
 
 const BACKEND_REQUEST_TIMEOUT_MS = getBackendRequestTimeoutMs()
@@ -56,11 +63,15 @@ export function extractInboundMessage(message) {
   } else if (content.imageMessage) {
     text = content.imageMessage.caption || ""
     messageType = "image"
+  } else if (content.audioMessage) {
+    text = ""
+    messageType = "audio"
   }
 
   if (!messageType) return null
 
-  const contextInfo = content.extendedTextMessage?.contextInfo || content.imageMessage?.contextInfo
+  const media = content.audioMessage
+  const contextInfo = content.extendedTextMessage?.contextInfo || content.imageMessage?.contextInfo || media?.contextInfo
   const quotedContent = contextInfo?.quotedMessage || {}
   const quotedText = typeof quotedContent.conversation === "string"
     ? quotedContent.conversation
@@ -68,7 +79,9 @@ export function extractInboundMessage(message) {
       ? quotedContent.extendedTextMessage.text
       : typeof quotedContent.imageMessage?.caption === "string"
         ? quotedContent.imageMessage.caption
-        : null
+        : typeof quotedContent.audioMessage?.caption === "string"
+          ? quotedContent.audioMessage.caption
+          : null
 
   const unixTimestamp = Number(message.messageTimestamp) || Math.floor(Date.now() / 1000)
   return {
@@ -79,6 +92,48 @@ export function extractInboundMessage(message) {
     text,
     quoted_text: quotedText,
     quoted_message_id: contextInfo?.stanzaId || null,
+    audio_mimetype: media?.mimetype || null,
+    audio_duration_seconds: Number.isFinite(Number(media?.seconds)) ? Number(media.seconds) : null,
+    audio_ptt: typeof media?.ptt === "boolean" ? media.ptt : null,
+    _raw_message: message,
+  }
+}
+
+export async function transcribeAudioMessage(inbound, sock, {
+  request = axios.post,
+  downloader = downloadMediaMessage,
+  maxBytes = getAudioLimit(process.env.AUDIO_MAX_BYTES, 12_000_000),
+  maxSeconds = getAudioLimit(process.env.AUDIO_MAX_SECONDS, 300),
+} = {}) {
+  if (inbound.message_type !== "audio") return inbound
+  if (inbound.audio_duration_seconds !== null && inbound.audio_duration_seconds > maxSeconds) {
+    return { ...inbound, transcription_error: "audio_too_long" }
+  }
+  const declaredSize = Number(inbound._raw_message?.message?.audioMessage?.fileLength)
+  if (Number.isFinite(declaredSize) && declaredSize > maxBytes) {
+    return { ...inbound, transcription_error: "audio_too_large" }
+  }
+  let buffer
+  try {
+    buffer = await downloader(inbound._raw_message, "buffer", {}, { reuploadRequest: sock.updateMediaMessage })
+  } catch (_) {
+    return { ...inbound, transcription_error: "download_error" }
+  }
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) return { ...inbound, transcription_error: "download_error" }
+  if (buffer.length > maxBytes) return { ...inbound, transcription_error: "audio_too_large" }
+  try {
+    const response = await request(TRANSCRIBE_URL, {
+      audio_base64: buffer.toString("base64"), mimetype: inbound.audio_mimetype || "audio/ogg",
+      duration_seconds: inbound.audio_duration_seconds,
+    }, { timeout: BACKEND_REQUEST_TIMEOUT_MS })
+    const result = response.data || {}
+    return {
+      ...inbound, text: typeof result.text === "string" ? result.text : "",
+      transcription_provider: result.provider || "unknown", transcription_model: result.model || "unknown",
+      transcription_latency_ms: Number(result.latency_ms || 0), transcription_error: result.error_type || null,
+    }
+  } catch (_) {
+    return { ...inbound, transcription_error: "transcription_provider_error" }
   }
 }
 
@@ -214,16 +269,18 @@ export async function dispatchBackendResponse(sock, recipient, response) {
   await sendBackendMessages(sock, recipient, response?.messages)
 }
 
-export function createBatchProcessor(sock, request = axios.post) {
+export function createBatchProcessor(sock, request = axios.post, transcribe = transcribeAudioMessage) {
   return async (sender, messages) => {
-    const first = messages[0]
+    const resolved = []
+    for (const message of messages) resolved.push(await transcribe(message, sock, { request }))
+    const first = resolved[0]
     const payload = {
       sender,
       message_id: first.message_id,
       timestamp: first.timestamp,
       message_type: first.message_type,
       text: first.text,
-      messages: messages.map(({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id }) => ({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id })),
+      messages: resolved.map(({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id, audio_mimetype, audio_duration_seconds, audio_ptt, transcription_provider, transcription_model, transcription_latency_ms, transcription_error }) => ({ message_id, timestamp, message_type, text, quoted_text, quoted_message_id, audio_mimetype, audio_duration_seconds, audio_ptt, transcription_provider, transcription_model, transcription_latency_ms, transcription_error })),
     }
     const response = await request(INBOUND_URL, payload, { timeout: BACKEND_REQUEST_TIMEOUT_MS })
     await dispatchBackendResponse(sock, sender, response.data)

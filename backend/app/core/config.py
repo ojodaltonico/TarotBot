@@ -25,8 +25,16 @@ class Settings(BaseSettings):
     ai_trust_env_proxy: bool = False
     ai_max_output_tokens: int = 800
     ai_recent_messages: int = 12
+    # A completed reading remains available historically, but only recent readings
+    # steer ordinary follow-ups by default. Older readings are recovered on request.
+    reading_active_context_minutes: int = 240
     ai_memory_update_interval: int = 8
     ai_store_debug_payloads: bool = False
+    audio_transcription_enabled: bool = True
+    audio_transcription_provider: str = "groq"
+    audio_transcription_model: str = "whisper-large-v3-turbo"
+    audio_max_seconds: int = 300
+    audio_max_bytes: int = 12_000_000
     whatsapp_typing_chars_per_second: float = 20.0
     whatsapp_min_typing_ms: int = 1800
     whatsapp_max_typing_ms: int = 22000

@@ -2,7 +2,10 @@ from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-from app.schemas.whatsapp import InboundWhatsAppMessage, InboundWhatsAppResponse
+from app.schemas.whatsapp import AudioTranscriptionRequest, AudioTranscriptionResponse, InboundWhatsAppMessage, InboundWhatsAppResponse
+from app.ai.audio_transcription import FakeAudioTranscriptionProvider
+from app.ai.groq_audio_provider import GroqAudioTranscriptionProvider
+from app.services.audio_transcription import transcribe_base64
 from app.services.inbound import process_inbound_message
 from app.schemas.tarot import DrawnCardResponse, SpreadSummary, TarotCardSummary, TestDrawRequest, TestDrawResponse
 from app.tarot.engine import TarotEngine
@@ -34,6 +37,12 @@ def ai_provider_from_settings():
     if settings.ai_provider=="groq": return GroqProvider(api_key=settings.groq_api_key,model=settings.ai_chat_model,timeout_seconds=settings.ai_timeout_seconds,enabled=settings.ai_enabled)
     raise HTTPException(status_code=422,detail="Unsupported AI_PROVIDER")
 
+def audio_provider_from_settings():
+    settings = get_settings()
+    if settings.audio_transcription_provider == "fake": return FakeAudioTranscriptionProvider()
+    if settings.audio_transcription_provider == "groq": return GroqAudioTranscriptionProvider(api_key=settings.groq_api_key, model=settings.audio_transcription_model, timeout_seconds=settings.ai_timeout_seconds, enabled=settings.audio_transcription_enabled)
+    raise HTTPException(status_code=422, detail="Unsupported AUDIO_TRANSCRIPTION_PROVIDER")
+
 
 @router.get("/health")
 def health() -> dict[str, str]:
@@ -48,6 +57,12 @@ def whatsapp_inbound(inbound: InboundWhatsAppMessage, request: Request) -> Inbou
         return process_inbound_message(session, inbound, ai_provider_from_settings(), store_debug=settings.ai_store_debug_payloads)
     finally:
         session.close()
+
+@router.post("/internal/whatsapp/transcribe", response_model=AudioTranscriptionResponse)
+def whatsapp_transcribe(body: AudioTranscriptionRequest) -> AudioTranscriptionResponse:
+    settings = get_settings()
+    result = transcribe_base64(audio_provider_from_settings(), body.audio_base64, body.mimetype, body.duration_seconds, max_bytes=settings.audio_max_bytes, max_seconds=settings.audio_max_seconds)
+    return AudioTranscriptionResponse(**result.__dict__)
 
 
 @router.get("/internal/tarot/cards", response_model=list[TarotCardSummary])

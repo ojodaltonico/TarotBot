@@ -83,7 +83,7 @@ TarotBot incluye el gateway WhatsApp/Baileys, FastAPI con SQLite, un Tarot Engin
 
 ## Configuración IA y laboratorio
 
-Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_TRUST_ENV_PROXY`, `AI_RECENT_MESSAGES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
+Las variables locales principales son `AI_ENABLED`, `AI_PROVIDER`, `AI_CHAT_MODEL`, `AI_MEMORY_MODEL`, `GEMINI_API_KEY`, `GROQ_API_KEY`, `AI_TIMEOUT_SECONDS`, `AI_TRUST_ENV_PROXY`, `AI_RECENT_MESSAGES`, `READING_ACTIVE_CONTEXT_MINUTES`, `AI_MEMORY_UPDATE_INTERVAL` y `AI_STORE_DEBUG_PAYLOADS`. `READING_ACTIVE_CONTEXT_MINUTES` (por defecto, 240) define cuánto tiempo una lectura reciente tiene prioridad como contexto de follow-up; las lecturas anteriores siguen disponibles si la persona las menciona expresamente. `.env` está ignorado por Git; nunca guardes una key real en el repositorio.
 
 `AI_TRUST_ENV_PROXY=false` (valor por defecto) hace que Gemini conecte directamente y no herede proxies configurados en el entorno. Usá `true` solamente si tu red necesita un proxy; entonces Gemini respetará `HTTP_PROXY`, `HTTPS_PROXY` y `ALL_PROXY`. Esta opción se aplica sólo al cliente HTTP de Gemini, sin cambiar variables del sistema.
 
@@ -104,3 +104,11 @@ Las rutas `/internal/lab/...` son sólo para desarrollo local: chat, estado de u
 El panel de observación vive dentro del backend: iniciá `start_backend.bat` y abrí [http://127.0.0.1:5001/admin](http://127.0.0.1:5001/admin). Está pensado exclusivamente para uso local y abre directamente, sin usuario ni contraseña. Podés ocultarlo con `ADMIN_ENABLED=false`.
 
 El dashboard es exclusivamente de lectura: permite revisar actividad, conversaciones anonimizadas, timeline, memoria, tiradas, imágenes `table_v2`, llamadas IA y errores. No permite responder, editar prompts, cambiar usuarios ni borrar información. Las páginas usan `no-store` y `noindex`; las imágenes se sirven sólo desde el backend local y se regeneran con el renderer si falta su cache.
+
+## Audios entrantes de WhatsApp
+
+Las notas de voz PTT y los archivos de audio compatibles se descargan mediante Baileys y se transcriben antes de entrar al mismo lote humano de mensajes que el texto. La configuración es independiente de la IA conversacional: `AUDIO_TRANSCRIPTION_ENABLED`, `AUDIO_TRANSCRIPTION_PROVIDER`, `AUDIO_TRANSCRIPTION_MODEL`, `AUDIO_MAX_SECONDS` y `AUDIO_MAX_BYTES`. La configuración inicial usa Groq con `whisper-large-v3-turbo`; acepta el OGG/Opus habitual de WhatsApp, por lo que esta primera versión no requiere ffmpeg.
+
+El audio original se guarda sólo de forma temporal en `data/temp/audio/` durante la transcripción y se elimina incluso ante un fallo. Para dar continuidad, se persiste el texto transcripto como contenido del mensaje físico de tipo `audio`; el dashboard muestra “🎤 Audio” y su transcripción, sin reproductor ni archivo de voz. No se registran transcripciones ni binarios en los logs normales. Los límites iniciales son cinco minutos y 12 MB; si se superan, el bot pide el audio más corto o escrito.
+
+Para una comprobación manual explícita, sin crear conversación, usá `backend\.venv\Scripts\python.exe scripts\test_audio_transcription.py <archivo>`. No se ejecuta desde los tests y no hay samples privados versionados.

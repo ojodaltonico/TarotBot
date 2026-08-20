@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { resolve } from "node:path"
-import { dispatchBackendResponse, extractInboundMessage, getBackendRequestTimeoutMs, getCollectionTimeoutMs, isGatewayTimeout, isGroupJid, MessageBatcher, sendBackendMessages } from "../index.js"
+import { createBatchProcessor, dispatchBackendResponse, extractInboundMessage, getBackendRequestTimeoutMs, getCollectionTimeoutMs, isGatewayTimeout, isGroupJid, MessageBatcher, sendBackendMessages, transcribeAudioMessage } from "../index.js"
 
 function fakeClock() {
   let now = 0
@@ -186,4 +186,45 @@ test("un fallo durante el typing siempre pausa la presencia", async () => {
     /timer failed/,
   )
   assert.deepEqual(presences, ["composing", "paused"])
+})
+
+test("detecta nota de voz y conserva metadatos y referencia a audio citado", () => {
+  const raw = { key: { remoteJid: "5491100000000@s.whatsapp.net", id: "AUDIO" }, messageTimestamp: 1_700_000_000, message: { audioMessage: { mimetype: "audio/ogg; codecs=opus", seconds: 12, ptt: true, contextInfo: { stanzaId: "PREV-AUDIO", quotedMessage: { audioMessage: {} } } } } }
+  const payload = extractInboundMessage(raw)
+  assert.equal(payload.message_type, "audio")
+  assert.equal(payload.audio_mimetype, "audio/ogg; codecs=opus")
+  assert.equal(payload.audio_duration_seconds, 12)
+  assert.equal(payload.audio_ptt, true)
+  assert.equal(payload.quoted_message_id, "PREV-AUDIO")
+})
+
+test("descarga una nota de voz mock y la envía una sola vez al backend de transcripción", async () => {
+  const inboundAudio = extractInboundMessage({ key: { remoteJid: "a@s.whatsapp.net", id: "VOICE" }, messageTimestamp: 1, message: { audioMessage: { mimetype: "audio/ogg", seconds: 3, ptt: true } } })
+  const calls = []
+  const result = await transcribeAudioMessage(inboundAudio, { updateMediaMessage: async () => {} }, { downloader: async () => Buffer.from("audio"), request: async (url, body) => { calls.push([url, body]); return { data: { text: "Hola, consulta laboral.", provider: "fake", model: "fake-audio", latency_ms: 2 } } } })
+  assert.equal(result.text, "Hola, consulta laboral.")
+  assert.equal(result.transcription_error, null)
+  assert.equal(calls.length, 1)
+  assert.match(calls[0][0], /\/internal\/whatsapp\/transcribe$/)
+})
+
+test("audio declarado demasiado grande no se descarga", async () => {
+  const raw = { key: { remoteJid: "a@s.whatsapp.net", id: "LARGE" }, messageTimestamp: 1, message: { audioMessage: { mimetype: "audio/ogg", fileLength: 1000 } } }
+  const result = await transcribeAudioMessage(extractInboundMessage(raw), {}, { maxBytes: 10, downloader: async () => { throw new Error("no debe descargar") } })
+  assert.equal(result.transcription_error, "audio_too_large")
+})
+
+test("distingue un fallo de descarga de un fallo del proveedor de transcripción", async () => {
+  const raw = { key: { remoteJid: "a@s.whatsapp.net", id: "ERROR" }, messageTimestamp: 1, message: { audioMessage: { mimetype: "audio/ogg" } } }
+  const downloadFailure = await transcribeAudioMessage(extractInboundMessage(raw), {}, { downloader: async () => { throw new Error("download") } })
+  const providerFailure = await transcribeAudioMessage(extractInboundMessage(raw), {}, { downloader: async () => Buffer.from("audio"), request: async () => { throw new Error("provider") } })
+  assert.equal(downloadFailure.transcription_error, "download_error")
+  assert.equal(providerFailure.transcription_error, "transcription_provider_error")
+})
+
+test("lote texto audio texto conserva su orden tras resolver transcripción", async () => {
+  const delivered = []
+  const processor = createBatchProcessor({ sendPresenceUpdate: async () => {}, sendMessage: async () => {} }, async (_url, payload) => { delivered.push(payload); return { data: { messages: [] } } }, async (message) => message.message_type === "audio" ? { ...message, text: "audio transcripto" } : message)
+  await processor("a@s.whatsapp.net", [{ ...inbound("a@s.whatsapp.net", "a1"), text: "primero" }, { ...inbound("a@s.whatsapp.net", "a2", ""), message_type: "audio" }, { ...inbound("a@s.whatsapp.net", "a3"), text: "ultimo" }])
+  assert.deepEqual(delivered[0].messages.map((message) => message.text), ["primero", "audio transcripto", "ultimo"])
 })
